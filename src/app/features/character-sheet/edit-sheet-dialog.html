@@ -1,0 +1,203 @@
+<form
+  class="flex max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-line bg-panel text-white shadow-2xl"
+  [formGroup]="form"
+  (ngSubmit)="save()"
+>
+  <div class="flex items-center justify-between border-b border-line p-4">
+    <h2 class="font-display text-xl">Editar ficha</h2>
+    <button
+      type="button"
+      class="btn size-11 p-0 text-muted"
+      aria-label="Fechar"
+      (click)="ref.close()"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="flex flex-col gap-5 overflow-y-auto p-4">
+    <fieldset class="grid grid-cols-2 gap-3">
+      <legend class="label mb-2">Identidade</legend>
+      <label class="col-span-2 flex flex-col gap-1 sm:col-span-1">
+        <span class="text-sm text-muted">Classe</span>
+        <select class="field" formControlName="classId" (change)="onClassChange()">
+          <option value="">—</option>
+          @for (cl of classes; track cl.id) {
+            <option [value]="cl.id">{{ cl.name }} ({{ cl.domains.join(' / ') }})</option>
+          }
+        </select>
+      </label>
+      <label class="col-span-2 flex flex-col gap-1 sm:col-span-1">
+        <span class="text-sm text-muted">Subclasse</span>
+        <input class="field" formControlName="subclass" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Ancestralidade</span>
+        <input class="field" formControlName="ancestry" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Comunidade</span>
+        <input class="field" formControlName="community" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Pronomes</span>
+        <input class="field" formControlName="pronouns" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Nível</span>
+        <input class="field" type="number" inputmode="numeric" formControlName="level" />
+      </label>
+    </fieldset>
+
+    <fieldset class="grid grid-cols-3 gap-3" formGroupName="traits">
+      <legend class="label mb-2">Atributos</legend>
+      @for (t of traitIds; track t) {
+        <label class="flex flex-col gap-1">
+          <span class="text-sm text-muted">{{ traitLabels[t] }}</span>
+          <input
+            class="field text-center"
+            type="number"
+            inputmode="numeric"
+            [formControlName]="t"
+          />
+        </label>
+      }
+    </fieldset>
+
+    <fieldset class="grid grid-cols-3 gap-3">
+      <legend class="label mb-2">Valores</legend>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Evasão</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="evasion"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Proficiência</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="proficiency"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">PV máx.</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="hpMax"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Estresse máx.</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="stressMax"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Esperança máx.</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="hopeMax"
+        />
+      </label>
+      <span></span>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Limiar Maior</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="major"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Limiar Grave</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="severe"
+        />
+      </label>
+    </fieldset>
+
+    <fieldset class="grid grid-cols-2 gap-3">
+      <legend class="label mb-2">Equipamento</legend>
+      <label class="col-span-2 flex flex-col gap-1">
+        <span class="text-sm text-muted">Arma primária</span>
+        <input
+          class="field"
+          formControlName="primaryWeapon"
+          placeholder="Ex.: Espada longa — Força, Corpo a corpo, d10+3"
+        />
+      </label>
+      <label class="col-span-2 flex flex-col gap-1">
+        <span class="text-sm text-muted">Arma secundária</span>
+        <input class="field" formControlName="secondaryWeapon" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Armadura</span>
+        <input class="field" formControlName="armorName" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Valor de armadura</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="armorScore"
+        />
+      </label>
+    </fieldset>
+
+    <fieldset class="flex flex-col gap-2" formArrayName="experiences">
+      <legend class="label mb-2">Experiências</legend>
+      @for (e of experiences.controls; track e; let i = $index) {
+        <div class="flex gap-2" [formGroupName]="i">
+          <input
+            class="field flex-1"
+            formControlName="name"
+            placeholder="Ex.: Criado nas ruas"
+            [attr.aria-label]="'Experiência ' + (i + 1)"
+          />
+          <input
+            class="field w-20 text-center"
+            type="number"
+            inputmode="numeric"
+            formControlName="bonus"
+            aria-label="Bônus"
+          />
+          <button
+            type="button"
+            class="btn size-11 p-0 text-muted"
+            aria-label="Remover experiência"
+            (click)="experiences.removeAt(i)"
+          >
+            ✕
+          </button>
+        </div>
+      }
+      <button type="button" class="btn-ghost self-start text-sm" (click)="addExperience()">
+        + Experiência
+      </button>
+    </fieldset>
+  </div>
+
+  <div class="flex gap-2 border-t border-line p-4">
+    <button type="button" class="btn-ghost flex-1" (click)="ref.close()">Cancelar</button>
+    <button type="submit" class="btn-hope flex-1" [disabled]="saving() || form.invalid">
+      Salvar
+    </button>
+  </div>
+</form>

@@ -1,0 +1,75 @@
+<main class="bg relative grid min-h-dvh place-items-center px-4 py-10">
+  <!-- Put your art at public/images/login-bg.jpg; inline url() resolves against <base href>. -->
+  <div
+    class="absolute inset-0 bg-cover bg-center opacity-60"
+    style="background-image: url(images/login-bg.jpg)"
+    aria-hidden="true"
+  ></div>
+  <section
+    class="relative w-full max-w-sm rounded-3xl border border-line/80 bg-panel/85 p-6 shadow-2xl backdrop-blur-md"
+  >
+    <h1 class="text-center font-display text-3xl font-bold tracking-wide text-white">
+      <span class="text-hope">Dagger</span><span class="text-fear">heart</span>
+    </h1>
+    <p class="mt-1 text-center text-sm text-muted">Mesa Nix</p>
+
+    @switch (step()) {
+      @case ('name') {
+        <form class="mt-6 flex flex-col gap-3" [formGroup]="nameForm" (ngSubmit)="submitName()">
+          <label for="name" class="label">Login</label>
+          <input
+            id="name"
+            class="field"
+            formControlName="name"
+            placeholder="Nome do seu personagem"
+            autocomplete="off"
+            autocapitalize="words"
+            enterkeyhint="go"
+          />
+          <button type="submit" class="btn-hope mt-1" [disabled]="busy() || name.invalid">
+            {{ busy() ? 'Entrando…' : 'Entrar' }}
+          </button>
+        </form>
+      }
+      @case ('pin') {
+        <form class="mt-6 flex flex-col gap-3" [formGroup]="pinForm" (ngSubmit)="submitPin()">
+          <label for="pin" class="label">PIN do mestre</label>
+          <input
+            id="pin"
+            class="field text-center text-2xl tracking-[0.5em]"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="8"
+            formControlName="pin"
+          />
+          <button type="submit" class="btn-fear mt-1" [disabled]="busy() || pin.invalid">
+            Entrar como mestre
+          </button>
+          <button type="button" class="btn-ghost" (click)="back()">Voltar</button>
+        </form>
+      }
+      @case ('new') {
+        <div class="mt-6 flex flex-col gap-3">
+          <p class="text-center">
+            Ainda não existe ficha para <strong class="text-hope">{{ name.value.trim() }}</strong
+            >. <br />Como quer começar?
+          </p>
+          <button type="button" class="btn-hope" disabled title="Em breve">
+            Guia de criação <span class="text-xs font-normal">(em breve)</span>
+          </button>
+          <button type="button" class="btn-ghost" [disabled]="busy()" (click)="createBlank()">
+            Ficha em branco
+          </button>
+          <button type="button" class="btn text-muted" (click)="back()">Não sou eu, voltar</button>
+        </div>
+      }
+    }
+
+    @if (error()) {
+      <p class="mt-4 rounded-lg bg-hp/15 px-3 py-2 text-center text-sm text-hp" role="alert">
+        {{ error() }}
+      </p>
+    }
+  </section>
+</main>

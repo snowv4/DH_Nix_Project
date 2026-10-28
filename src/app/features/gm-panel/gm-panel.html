@@ -1,0 +1,214 @@
+<div class="mx-auto flex w-full max-w-7xl flex-col gap-4 p-3 sm:p-4">
+  <header class="flex flex-wrap items-center gap-3">
+    <h1 class="flex-1 font-display text-2xl font-bold">
+      Painel do <span class="text-fear">Mestre</span>
+    </h1>
+    <button type="button" class="btn-ghost" disabled title="Em breve">
+      🗺️ Mapa de combate <span class="text-xs">(em breve)</span>
+    </button>
+    <button type="button" class="btn-ghost" (click)="logout()">Sair</button>
+  </header>
+
+  <!-- Fear -->
+  <section class="card flex flex-wrap items-center gap-4 border-fear/50" aria-label="Medo">
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        class="btn-ghost size-14 p-0 text-2xl"
+        aria-label="Diminuir Medo"
+        (click)="fear(-1)"
+      >
+        −
+      </button>
+      <div class="text-center">
+        <p class="label text-fear">Medo</p>
+        <p class="font-display text-5xl text-fear tabular-nums">{{ campaign().fear }}</p>
+      </div>
+      <button
+        type="button"
+        class="btn-fear size-14 p-0 text-2xl"
+        aria-label="Aumentar Medo"
+        (click)="fear(1)"
+      >
+        +
+      </button>
+    </div>
+    <div class="flex flex-1 flex-wrap gap-1.5">
+      @for (i of fearSlots; track i) {
+        <button
+          type="button"
+          class="grid size-11 place-items-center"
+          [attr.aria-label]="'Medo ' + (i + 1)"
+          (click)="setFear(i)"
+        >
+          <span
+            class="block size-7 rotate-45 rounded-md border-2 border-fear transition"
+            [class.bg-fear]="i < campaign().fear"
+            [class.shadow-[0_0_12px_var(--color-fear)]]="i < campaign().fear"
+          ></span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_20rem]">
+    <section aria-label="Personagens">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h2 class="label">Mesa ({{ characters().length }})</h2>
+        <div class="flex gap-1 rounded-xl bg-panel p-1" role="group" aria-label="Modo de exibição">
+          <button
+            type="button"
+            class="btn min-h-9 text-sm"
+            [class]="view() === 'compact' ? 'bg-panel-2 text-hope' : 'text-muted'"
+            [attr.aria-pressed]="view() === 'compact'"
+            (click)="setView('compact')"
+          >
+            Resumido
+          </button>
+          <button
+            type="button"
+            class="btn min-h-9 text-sm"
+            [class]="view() === 'extended' ? 'bg-panel-2 text-hope' : 'text-muted'"
+            [attr.aria-pressed]="view() === 'extended'"
+            (click)="setView('extended')"
+          >
+            Estendido
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        @for (c of characters(); track c.id) {
+          <article class="card flex flex-col gap-3">
+            <button
+              type="button"
+              class="-m-1 rounded-lg p-1 text-left hover:bg-panel-2"
+              (click)="open(c)"
+            >
+              <h3
+                class="font-display text-lg font-bold text-white underline-offset-4 hover:underline"
+              >
+                {{ c.name }}
+              </h3>
+              <p class="text-xs text-muted">
+                Nv {{ c.level }}
+                @if (className(c)) {
+                  · {{ className(c) }}
+                }
+                @if (c.subclass) {
+                  · {{ c.subclass }}
+                }
+              </p>
+            </button>
+
+            <dl class="grid grid-cols-2 gap-2 text-sm">
+              @for (
+                r of [
+                  { l: 'PV', v: c.hp.marked, m: c.hp.max, cls: 'bg-hp' },
+                  { l: 'Estresse', v: c.stress.marked, m: c.stress.max, cls: 'bg-stress' },
+                  { l: 'Esperança', v: c.hope.current, m: c.hope.max, cls: 'bg-hope' },
+                  { l: 'Armadura', v: c.armor.slotsMarked, m: c.armor.score, cls: 'bg-armor' },
+                ];
+                track r.l
+              ) {
+                <div>
+                  <dt class="flex justify-between text-muted">
+                    <span>{{ r.l }}</span
+                    ><span class="tabular-nums text-white">{{ r.v }}/{{ r.m }}</span>
+                  </dt>
+                  <dd class="mt-1 h-2 overflow-hidden rounded-full bg-ink">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      [class]="r.cls"
+                      [style.width.%]="r.m ? (r.v / r.m) * 100 : 0"
+                    ></div>
+                  </dd>
+                </div>
+              }
+            </dl>
+
+            @if (view() === 'extended') {
+              <div class="grid grid-cols-4 gap-1 text-center text-xs">
+                <div class="rounded-lg bg-panel-2 p-1.5">
+                  <p class="text-muted">Evasão</p>
+                  <p class="text-base font-semibold">{{ c.evasion }}</p>
+                </div>
+                <div class="rounded-lg bg-panel-2 p-1.5">
+                  <p class="text-muted">Maior</p>
+                  <p class="text-base font-semibold">{{ c.thresholds.major }}</p>
+                </div>
+                <div class="rounded-lg bg-panel-2 p-1.5">
+                  <p class="text-muted">Grave</p>
+                  <p class="text-base font-semibold">{{ c.thresholds.severe }}</p>
+                </div>
+                <div class="rounded-lg bg-panel-2 p-1.5">
+                  <p class="text-muted">Profic.</p>
+                  <p class="text-base font-semibold">{{ c.proficiency }}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-1 text-center text-xs">
+                @for (t of traitIds; track t) {
+                  <div class="rounded-lg bg-panel-2 p-1.5">
+                    <p class="text-muted">{{ traitLabels[t] }}</p>
+                    <p class="text-base font-semibold">{{ signed(c.traits[t]) }}</p>
+                  </div>
+                }
+              </div>
+              @if (c.experiences.length) {
+                <p class="text-xs text-muted">
+                  @for (e of c.experiences; track $index; let last = $last) {
+                    <span class="text-white">{{ e.name }}</span> {{ signed(e.bonus)
+                    }}{{ last ? '' : ' · ' }}
+                  }
+                </p>
+              }
+              @if (c.primaryWeapon) {
+                <p class="text-xs"><span class="text-muted">Arma:</span> {{ c.primaryWeapon }}</p>
+              }
+            }
+          </article>
+        } @empty {
+          <p class="card text-muted">
+            Nenhum personagem ainda. Peça para os jogadores entrarem com o nome do personagem.
+          </p>
+        }
+      </div>
+    </section>
+
+    <aside class="card h-fit" aria-label="Últimas rolagens">
+      <h2 class="label">Últimas rolagens</h2>
+      <ul class="mt-2 flex flex-col gap-2">
+        @for (r of rolls(); track r.id) {
+          <li class="rounded-lg bg-panel-2 px-3 py-2 text-sm">
+            <div class="flex justify-between gap-2">
+              <span class="font-semibold">{{ r.characterName }}</span>
+              <span class="text-xs text-muted">{{ time(r.createdAt) }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-muted">{{ r.label }}</span>
+              <span>
+                <span class="text-hope">{{ r.hope }}</span
+                >/<span class="text-fear">{{ r.fear }}</span> → <strong>{{ r.total }}</strong>
+              </span>
+            </div>
+            <p
+              class="text-xs font-semibold"
+              [class.text-hope]="r.outcome !== 'fear'"
+              [class.text-fear]="r.outcome === 'fear'"
+            >
+              {{
+                r.outcome === 'critical'
+                  ? 'Crítico!'
+                  : r.outcome === 'hope'
+                    ? 'com Esperança'
+                    : 'com Medo'
+              }}
+            </p>
+          </li>
+        } @empty {
+          <li class="text-sm text-muted">Nenhuma rolagem ainda.</li>
+        }
+      </ul>
+    </aside>
+  </div>
+</div>
