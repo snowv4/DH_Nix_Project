@@ -51,7 +51,7 @@
     </div>
   </section>
 
-  <div class="grid gap-4 lg:grid-cols-[1fr_20rem]">
+  <div>
     <section aria-label="Personagens">
       <div class="mb-3 flex items-center justify-between gap-2">
         <h2 class="label">Mesa ({{ characters().length }})</h2>
@@ -174,41 +174,5 @@
         }
       </div>
     </section>
-
-    <aside class="card h-fit" aria-label="Últimas rolagens">
-      <h2 class="label">Últimas rolagens</h2>
-      <ul class="mt-2 flex flex-col gap-2">
-        @for (r of rolls(); track r.id) {
-          <li class="rounded-lg bg-panel-2 px-3 py-2 text-sm">
-            <div class="flex justify-between gap-2">
-              <span class="font-semibold">{{ r.characterName }}</span>
-              <span class="text-xs text-muted">{{ time(r.createdAt) }}</span>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-muted">{{ r.label }}</span>
-              <span>
-                <span class="text-hope">{{ r.hope }}</span
-                >/<span class="text-fear">{{ r.fear }}</span> → <strong>{{ r.total }}</strong>
-              </span>
-            </div>
-            <p
-              class="text-xs font-semibold"
-              [class.text-hope]="r.outcome !== 'fear'"
-              [class.text-fear]="r.outcome === 'fear'"
-            >
-              {{
-                r.outcome === 'critical'
-                  ? 'Crítico!'
-                  : r.outcome === 'hope'
-                    ? 'com Esperança'
-                    : 'com Medo'
-              }}
-            </p>
-          </li>
-        } @empty {
-          <li class="text-sm text-muted">Nenhuma rolagem ainda.</li>
-        }
-      </ul>
-    </aside>
   </div>
 </div>

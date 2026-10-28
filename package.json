@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "emulators": "firebase emulators:start --only auth,firestore"
+    "emulators": "firebase emulators:start --only auth,firestore",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-dh-nix-rules \"vitest run --config rules-tests/vitest.config.ts\""
   },
   "private": true,
   "packageManager": "npm@11.19.1",
@@ -29,6 +30,7 @@
     "@angular/cli": "^22.2.5",
     "@angular/compiler-cli": "^22.2.0",
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "22.6.0",
     "eslint": "^10.12.0",

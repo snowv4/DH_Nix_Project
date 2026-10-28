@@ -8,7 +8,8 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CLASSES, findClass, TRAIT_LABELS } from '../../core/data/classes';
+import { CLASSES, findClass } from '../../core/data/srd';
+import { TRAIT_LABELS } from '../../core/data/traits';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { Character, TRAIT_IDS } from '../../core/models/character';
 import { clamp } from '../../core/rules/character';
@@ -78,7 +79,7 @@ export class EditSheetDialog {
   protected onClassChange(): void {
     const info = findClass(this.form.controls.classId.value);
     if (!info || this.c.classId) return;
-    this.form.patchValue({ evasion: info.startingEvasion, hpMax: info.startingHp });
+    this.form.patchValue({ evasion: info.evasion, hpMax: info.hp });
   }
 
   protected async save(): Promise<void> {

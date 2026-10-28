@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { gmGuard, sheetGuard } from './core/auth/guards';
+import { creationGuard, gmGuard, sheetGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage) },
@@ -7,6 +7,12 @@ export const routes: Routes = [
     path: 'ficha/:id',
     canActivate: [sheetGuard],
     loadComponent: () => import('./features/character-sheet/sheet-page').then((m) => m.SheetPage),
+  },
+  {
+    path: 'criar/:id',
+    canActivate: [creationGuard],
+    loadComponent: () =>
+      import('./features/character-creation/creation-page').then((m) => m.CreationPage),
   },
   {
     path: 'mestre',

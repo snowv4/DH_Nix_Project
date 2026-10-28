@@ -51,6 +51,9 @@ export interface Character {
   gold: Gold;
   domainCards: { loadout: string; vault: string };
   features: string;
+  appearance: string;
+  background: string;
+  connections: string;
   notes: string;
   updatedAt: number;
 }

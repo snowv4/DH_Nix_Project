@@ -11,13 +11,15 @@ import {
   Signal,
 } from '@angular/core';
 import { Dialog } from '@angular/cdk/dialog';
-import { findClass, TRAIT_LABELS } from '../../core/data/classes';
+import { findClass } from '../../core/data/srd';
+import { TRAIT_LABELS } from '../../core/data/traits';
 import { CharacterRepository } from '../../core/firebase/character.repository';
-import { Character, CharacterPatch, Gold, TRAIT_IDS, TraitId } from '../../core/models/character';
+import { Character, CharacterPatch, Gold, TRAIT_IDS } from '../../core/models/character';
 import { clamp, toggleSlot } from '../../core/rules/character';
 import { ResourceTrack } from '../../shared/ui/resource-track';
-import { DiceRollerDialog, DiceRollerData } from '../dice/dice-roller-dialog';
 import { EditSheetDialog } from './edit-sheet-dialog';
+
+type TextField = 'items' | 'features' | 'notes' | 'appearance' | 'background' | 'connections';
 
 type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
 
@@ -44,12 +46,21 @@ export class CharacterSheet implements OnInit {
     { id: 'traits', label: 'Atributos' },
     { id: 'gear', label: 'Equipamento' },
     { id: 'cards', label: 'Cartas' },
-    { id: 'notes', label: 'Notas' },
+    { id: 'notes', label: 'Notas e história' },
   ];
   protected readonly coins: { id: keyof Gold; label: string }[] = [
     { id: 'handfuls', label: 'Punhados' },
     { id: 'bags', label: 'Sacolas' },
     { id: 'chests', label: 'Baús' },
+  ];
+  protected readonly storyFields: {
+    id: 'appearance' | 'background' | 'connections';
+    label: string;
+    placeholder: string;
+  }[] = [
+    { id: 'appearance', label: 'Aparência', placeholder: 'Como seu personagem é?' },
+    { id: 'background', label: 'História', placeholder: 'Perguntas de história e respostas' },
+    { id: 'connections', label: 'Vínculos', placeholder: 'Relações com o grupo' },
   ];
   protected readonly traitIds = TRAIT_IDS;
   protected readonly traitLabels = TRAIT_LABELS;
@@ -90,7 +101,7 @@ export class CharacterSheet implements OnInit {
     this.save({ armor: { ...c.armor, slotsMarked: next } });
   }
 
-  protected saveText(field: 'items' | 'features' | 'notes', current: string, event: Event): void {
+  protected saveText(field: TextField, current: string, event: Event): void {
     const value = (event.target as HTMLTextAreaElement).value;
     if (value !== current) this.save({ [field]: value });
   }
@@ -111,14 +122,6 @@ export class CharacterSheet implements OnInit {
 
   protected signed(n: number): string {
     return n > 0 ? `+${n}` : `${n}`;
-  }
-
-  protected roll(c: Character, trait?: TraitId): void {
-    this.dialog.open<void, DiceRollerData>(DiceRollerDialog, {
-      data: { character: c, trait },
-      width: '28rem',
-      maxWidth: 'calc(100vw - 1.5rem)',
-    });
   }
 
   protected edit(c: Character): void {

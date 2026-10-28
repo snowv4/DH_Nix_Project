@@ -22,3 +22,9 @@ npm start           # terminal 2: http://localhost:4200 (usa os emuladores)
 ## Trocar a imagem do login
 
 Coloque a imagem em `public/images/login-bg.jpg`.
+
+## Licença do conteúdo de jogo
+
+Este projeto inclui materiais do Daggerheart System Reference Document 2.0, © Critical Role, LLC, sob os termos da Darrington Press Community Gaming License (DPCGL). Mais informações em https://www.daggerheart.com e a licença em https://darringtonpress.com/license/.
+
+O conteúdo do SRD em `src/app/core/data/srd/` foi **traduzido para o português e resumido/adaptado** por este projeto (descrições de ancestralidades e comunidades estão condensadas). Não houve modificações anteriores por terceiros. Este projeto não é afiliado, patrocinado nem endossado pela Darrington Press ou pela Critical Role.

@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { LicenseNotice } from '../../shared/ui/license-notice';
 import { isGmPin } from '../../core/auth/pin';
 import { SessionService } from '../../core/auth/session.service';
 import { CharacterRepository } from '../../core/firebase/character.repository';
+import { DraftRepository } from '../../core/firebase/draft.repository';
 import { FirebaseService } from '../../core/firebase/firebase.service';
 import { characterIdFromName, createBlankCharacter } from '../../core/rules/character';
 
@@ -13,7 +15,7 @@ const GM_KEYWORD = 'mestre';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LicenseNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
@@ -21,12 +23,15 @@ const GM_KEYWORD = 'mestre';
 export class LoginPage {
   private readonly firebase = inject(FirebaseService);
   private readonly characters = inject(CharacterRepository);
+  private readonly drafts = inject(DraftRepository);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
   protected readonly step = signal<Step>('name');
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+  /** A creation draft already exists for the typed name. */
+  protected readonly hasDraft = signal(false);
 
   protected readonly name = new FormControl('', {
     nonNullable: true,
@@ -56,6 +61,7 @@ export class LoginPage {
       if (await this.characters.exists(id)) {
         this.enterSheet(id);
       } else {
+        this.hasDraft.set(await this.drafts.exists(id));
         this.step.set('new');
       }
     });
@@ -79,6 +85,13 @@ export class LoginPage {
       await this.characters.create(character);
       this.enterSheet(character.id);
     });
+  }
+
+  protected startGuide(): void {
+    const name = this.name.value.trim();
+    const id = characterIdFromName(name);
+    this.session.start({ kind: 'player', characterId: id });
+    void this.router.navigate(['/criar', id], { queryParams: { nome: name } });
   }
 
   protected back(): void {

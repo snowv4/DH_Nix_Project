@@ -52,6 +52,9 @@ export function createBlankCharacter(name: string, now = Date.now()): Character 
     gold: { handfuls: 1, bags: 0, chests: 0 },
     domainCards: { loadout: '', vault: '' },
     features: '',
+    appearance: '',
+    background: '',
+    connections: '',
     notes: '',
     updatedAt: now,
   };

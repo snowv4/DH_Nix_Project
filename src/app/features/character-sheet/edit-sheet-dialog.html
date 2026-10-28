@@ -23,7 +23,7 @@
         <select class="field" formControlName="classId" (change)="onClassChange()">
           <option value="">—</option>
           @for (cl of classes; track cl.id) {
-            <option [value]="cl.id">{{ cl.name }} ({{ cl.domains.join(' / ') }})</option>
+            <option [value]="cl.id">{{ cl.name }}</option>
           }
         </select>
       </label>

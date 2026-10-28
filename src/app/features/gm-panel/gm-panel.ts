@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { Dialog } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
 import { SessionService } from '../../core/auth/session.service';
-import { findClass, TRAIT_LABELS } from '../../core/data/classes';
+import { findClass } from '../../core/data/srd';
+import { TRAIT_LABELS } from '../../core/data/traits';
 import { CampaignRepository, MAX_FEAR } from '../../core/firebase/campaign.repository';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { Character, TRAIT_IDS } from '../../core/models/character';
@@ -26,7 +27,6 @@ export class GmPanel {
 
   protected readonly characters = inject(CharacterRepository).watchAll(this.destroyRef);
   protected readonly campaign = this.campaignRepo.watchCampaign(this.destroyRef);
-  protected readonly rolls = this.campaignRepo.watchRecentRolls(this.destroyRef);
   protected readonly view = signal<View>(readView());
   protected readonly fearSlots = Array.from({ length: MAX_FEAR }, (_, i) => i);
   protected readonly maxFear = MAX_FEAR;
@@ -65,10 +65,6 @@ export class GmPanel {
 
   protected signed(n: number): string {
     return n > 0 ? `+${n}` : `${n}`;
-  }
-
-  protected time(ms: number): string {
-    return new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
   protected logout(): void {

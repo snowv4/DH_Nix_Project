@@ -26,8 +26,9 @@ Se algum script não existir ainda no `package.json`, crie.
 src/app/
   core/      auth, firebase, models, data (conteúdo do jogo em JSON/TS), rules (funções puras)
   shared/ui  componentes visuais reutilizáveis
-  features/  login, character-sheet, gm-panel, dice (e depois character-creation,
+  features/  login, character-sheet, gm-panel, character-creation (e depois
              level-up, adversaries, map, tv)
+  core/data/srd  conteúdo do SRD 2.0 traduzido (não há rolador de dados: mesa presencial)
 ```
 Cada feature tem rotas lazy (`loadComponent`/`loadChildren`).
 

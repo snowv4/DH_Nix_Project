@@ -55,8 +55,8 @@
             Ainda não existe ficha para <strong class="text-hope">{{ name.value.trim() }}</strong
             >. <br />Como quer começar?
           </p>
-          <button type="button" class="btn-hope" disabled title="Em breve">
-            Guia de criação <span class="text-xs font-normal">(em breve)</span>
+          <button type="button" class="btn-hope" (click)="startGuide()">
+            {{ hasDraft() ? 'Continuar guia de criação' : 'Guia de criação' }}
           </button>
           <button type="button" class="btn-ghost" [disabled]="busy()" (click)="createBlank()">
             Ficha em branco
@@ -72,4 +72,7 @@
       </p>
     }
   </section>
+  <footer class="absolute inset-x-0 bottom-0 px-4 pb-3">
+    <app-license-notice />
+  </footer>
 </main>

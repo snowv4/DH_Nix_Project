@@ -1,0 +1,123 @@
+<div class="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
+  <header class="sticky top-0 z-20 border-b border-line bg-ink/95 px-3 pt-3 pb-2 backdrop-blur">
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="btn size-11 shrink-0 p-0 text-muted"
+        aria-label="Sair do guia"
+        (click)="exit()"
+      >
+        ✕
+      </button>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs text-muted">
+          Passo {{ store.stepIndex() + 1 }} de {{ steps.length }}
+          @if (store.saving()) {
+            · salvando…
+          } @else if (store.loaded()) {
+            · rascunho salvo
+          }
+        </p>
+        <h1 class="truncate font-display text-xl font-bold">{{ store.step().label }}</h1>
+      </div>
+    </div>
+    <div
+      class="mt-2 h-1.5 overflow-hidden rounded-full bg-panel"
+      role="progressbar"
+      [attr.aria-valuenow]="store.stepIndex() + 1"
+      aria-valuemin="1"
+      [attr.aria-valuemax]="steps.length"
+    >
+      <div
+        class="h-full rounded-full bg-hope transition-all"
+        [style.width.%]="store.progress()"
+      ></div>
+    </div>
+  </header>
+
+  <main class="flex-1 px-3 pt-4 pb-32">
+    @if (!store.loaded()) {
+      <p class="text-center text-muted">Carregando seu rascunho…</p>
+    } @else {
+      @switch (store.step().id) {
+        @case ('class') {
+          <app-class-step />
+        }
+        @case ('subclass') {
+          <app-subclass-step />
+        }
+        @case ('ancestry') {
+          <app-ancestry-step />
+        }
+        @case ('community') {
+          <app-community-step />
+        }
+        @case ('traits') {
+          <app-traits-step />
+        }
+        @case ('derived') {
+          <app-derived-step />
+        }
+        @case ('equipment') {
+          <app-equipment-step />
+        }
+        @case ('experiences') {
+          <app-experiences-step />
+        }
+        @case ('cards') {
+          <app-cards-step />
+        }
+        @case ('story') {
+          <app-story-step />
+        }
+        @case ('connections') {
+          <app-connections-step [characterId]="id()" />
+        }
+        @case ('review') {
+          <app-review-step (edit)="store.goTo($event)" />
+        }
+      }
+    }
+    <div class="mt-8"><app-license-notice /></div>
+  </main>
+
+  <footer class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 backdrop-blur">
+    <div class="mx-auto flex max-w-2xl flex-col gap-2 px-3 py-3">
+      @if (store.loaded() && store.error(); as err) {
+        <p class="text-center text-sm text-muted" aria-live="polite">{{ err }}</p>
+      }
+      @if (error()) {
+        <p class="text-center text-sm text-hp" role="alert">{{ error() }}</p>
+      }
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="btn-ghost flex-1"
+          [disabled]="store.stepIndex() === 0"
+          (click)="back()"
+        >
+          Voltar
+        </button>
+        @if (store.step().id === 'review') {
+          <button
+            type="button"
+            class="btn-hope flex-[2]"
+            [disabled]="!!store.error() || finishing()"
+            (click)="finish()"
+          >
+            {{ finishing() ? 'Criando…' : 'Finalizar personagem' }}
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn-hope flex-[2]"
+            [disabled]="!!store.error() || !store.loaded()"
+            (click)="next()"
+          >
+            Próximo
+          </button>
+        }
+      </div>
+    </div>
+  </footer>
+</div>

@@ -16,6 +16,9 @@
 - **Hospedagem no GitHub Pages** (não no Firebase Hosting). Storage adiado (plano pago).
 - Painel do mestre: modo **Resumido** (PV, Estresse, Esperança, Armadura) e **Estendido**; clicar no nome abre a ficha completa num popup.
 - Mapa: o mestre vê tudo; um **popup "visão dos jogadores"** vai para a TV e mostra só o que ele liberar (névoa, monstros ocultos).
+- **Sem rolador de dados no site**: a mesa é presencial, com dados físicos. O site guarda fichas, Medo e recursos.
+- **Conteúdo do jogo = SRD 2.0** (`DH_SRD_2_2026_08_25.pdf`), que já inclui o conteúdo de *Hope & Fear*: 13 classes, 24 ancestralidades, 15 comunidades, 10 domínios. Transcrito e **traduzido para pt-BR** em `src/app/core/data/srd/` (nome original entre parênteses). Os PDFs dos livros completos **não** entram no repositório (licença DPCGL 2.0, seção 1.5).
+- Transformações (Demigod, Ghost etc.) ficam de fora da criação por enquanto: o SRD diz que são concedidas pelo mestre.
 
 ## 1. Visão geral
 
@@ -129,7 +132,10 @@ Dano recebido comparado aos limiares:
 
 A ficha deve ter um botão **"Receber dano"**: digita o valor → o sistema calcula quantos PV marcar, oferece usar Armadura, e aplica.
 
-### 3.6 Classes, domínios e subclasses (conferir)
+### 3.6 Classes, domínios e subclasses
+
+> **Atualizado:** os dados conferidos com o SRD 2.0 estão em `src/app/core/data/srd/classes.ts` (13 classes). A tabela abaixo é a versão original e está desatualizada.
+
 | Classe | Domínios | Evasão inicial | PV inicial | Subclasses |
 |---|---|---|---|---|
 | Bardo (Bard) | Graça, Códice | 10 | 5 | Trovador, Artífice das Palavras |
@@ -226,7 +232,7 @@ Botão "Subir de nível" (o mestre libera ou o jogador aciona). Passos:
 4. Nova carta de domínio.
 5. Revisão → aplicar. Guardar o histórico de nível (o que foi escolhido em cada nível) para poder desfazer.
 
-### 4.5 Rolador de dados
+### 4.5 Rolador de dados — **removido** (mesa presencial, ver seção 0)
 - Dualidade (2d12 com atributo, Experiência opcional gastando Esperança, bônus/penalidade manual, Vantagem/Desvantagem = +/−d6).
 - Dano (ex.: `2d8+3`, com Proficiência definindo nº de dados da arma).
 - Rolagem genérica (`XdY+Z`).
@@ -376,41 +382,32 @@ Estado: **signals** em serviços por feature (`CharacterStore`, `CampaignStore`)
 
 ## 8. Fases de entrega
 
-### Fase 0 — Fundação
-- `ng new` com routing, standalone, SCSS/Tailwind; ESLint + Prettier.
-- Firebase: projeto, Auth Google, Firestore, Storage, Hosting, Emulators.
-- Layout base, tema, login, guard.
-- **Pronto quando:** consigo logar com Google e ver uma página protegida, deploy no Hosting funcionando.
+Reorganizadas em 28/10/2026 para refletir o que já existe.
 
-### Fase 1 — Campanha + Ficha + Painel básico
-- Criar/entrar em campanha com código.
-- Seleção de personagem.
-- Ficha manual (sem wizard ainda: formulário simples para cadastrar a ficha atual dos amigos).
-- Recursos tocáveis em tempo real, anotações por sessão.
-- Painel do mestre com todos os PJs + Medo.
-- `core/rules/dice.ts` + rolador de Dualidade + log.
-- **Pronto quando:** os 5 jogadores conseguem usar a ficha no celular numa sessão real e o mestre vê tudo ao vivo.
+### ✅ Fase 0 — Fundação (feito)
+- Angular 22 + Tailwind + ESLint/Prettier; Firebase (Auth anônimo + Firestore + emuladores); deploy no GitHub Pages via Actions.
+- Login pelo nome do personagem; mestre com PIN.
 
-### Fase 2 — Criação guiada (prioridade máxima de qualidade)
-- Dados do jogo em JSON (classes, subclasses, ancestralidades, comunidades, cartas nível 1, armas e armaduras do patamar 1).
-- Wizard completo da seção 4.2 com rascunho.
-- `core/rules/creation.ts` com testes.
-- **Pronto quando:** alguém que nunca jogou consegue criar um personagem válido sozinho pelo celular.
+### ✅ Fase 1 — Ficha + Painel básico (feito)
+- Ficha manual editável, recursos tocáveis em tempo real, anotações.
+- Painel do mestre com todos os PJs (resumido/estendido, popup da ficha) + Medo.
 
-### Fase 3 — Evolução e sessão
-- Assistente de subir de nível + `leveling.ts`.
-- Receber dano, descansos, cartas Mão/Cofre.
-- Adversários e encontro no painel; contadores.
-- Animações da Esperança.
+### ✅ Fase 2 — Criação guiada (feito, primeira versão)
+- Dados do SRD 2.0 traduzidos (nível 1 / Patamar 1): classes, subclasses (Fundação), ancestralidades, comunidades, domínios, cartas de nível 1, armas e armaduras do Patamar 1, exemplos de Experiência.
+- Assistente de 12 passos em `/criar/:id`, com rascunho salvo em `campaigns/nix/drafts/{id}`.
+- `core/rules/creation.ts` com testes; regras do Firestore testadas no emulador (`npm run test:rules`).
+- **Pronto quando:** alguém que nunca jogou cria um personagem válido sozinho pelo celular. *(validar com os jogadores)*
+
+### Fase 3 — Sessão e evolução (próxima)
+- Receber dano (limiares + Armadura), descansos curto/longo, Mão/Cofre com as cartas do SRD.
+- Subir de nível (assistente) — exige transcrever cartas de nível 2+ e opções de avanço.
+- Adversários e contadores no painel do mestre. Anotações por sessão.
 
 ### Fase 4 — Mapa e TV
-- Mapa com Konva, tokens, grade, permissões.
-- Tela de TV.
+- Mapa com Konva: tokens, névoa, monstros ocultos; popup "visão dos jogadores" para a TV.
 
 ### Fase 5 — Polimento
-- PWA, tema claro, desfazer, exportar ficha (PDF/JSON), backup.
-
----
+- PWA, tema claro, desfazer, exportar ficha, retratos (Storage).
 
 ## 9. Requisitos não funcionais
 - Funcionar bem em Chrome Android e Safari iOS (tablets/celulares dos amigos).
