@@ -13,6 +13,7 @@ import {
 import { Dialog } from '@angular/cdk/dialog';
 import { DOMAIN_CARDS, DOMAINS, DomainCard, findCard, findClass } from '../../core/data/srd';
 import { TRAIT_COLORS, TRAIT_LABELS } from '../../core/data/traits';
+import { CardArtRepository } from '../../core/firebase/card-art.repository';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import {
   Character,
@@ -26,6 +27,7 @@ import { clamp, toggleSlot } from '../../core/rules/character';
 import { DamageThresholds } from '../../shared/ui/damage-thresholds';
 import { PortraitFrame } from '../../shared/ui/portrait-frame';
 import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
+import { RichText } from '../../shared/ui/rich-text';
 import { ResourceTrack } from '../../shared/ui/resource-track';
 import { DomainCardBlock } from './domain-card-block';
 import { EditSheetDialog } from './edit-sheet-dialog';
@@ -36,7 +38,7 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
 
 @Component({
   selector: 'app-character-sheet',
-  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock],
+  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock, RichText],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',
 })
@@ -49,6 +51,30 @@ export class CharacterSheet implements OnInit {
   private readonly repo = inject(CharacterRepository);
   private readonly dialog = inject(Dialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cardArtRepo = inject(CardArtRepository);
+  /** Shared art for every card, uploaded by anyone at the table. */
+  protected readonly cardArt = this.cardArtRepo.watchAll(this.destroyRef);
+  protected readonly editingFeatures = signal(false);
+
+  /** Features text → blocks separated by blank lines; "Category — Title" first lines become headings. */
+  protected readonly featureBlocks = computed(() =>
+    (this.character?.()?.features ?? '')
+      .split(/\n\s*\n/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => {
+        const [first, ...rest] = block.split('\n');
+        const dash = first.indexOf(' — ');
+        if (dash > 0 && rest.length) {
+          return {
+            category: first.slice(0, dash),
+            title: first.slice(dash + 3),
+            body: rest.join('\n'),
+          };
+        }
+        return { category: '', title: '', body: block };
+      }),
+  );
 
   protected character!: Signal<Character | null | undefined>;
   protected readonly tab = signal<Tab>('main');
@@ -161,6 +187,20 @@ export class CharacterSheet implements OnInit {
     } finally {
       this.portraitBusy.set(false);
     }
+  }
+
+  protected async setCardArt(cardId: string, file: File): Promise<void> {
+    this.cardError.set('');
+    try {
+      await this.cardArtRepo.set(cardId, await resizeImageToDataUrl(file, 640, 0.78));
+    } catch (e: unknown) {
+      console.error(e);
+      this.cardError.set('Não consegui usar essa imagem. Tente outra (JPG ou PNG).');
+    }
+  }
+
+  protected removeCardArt(cardId: string): void {
+    void this.cardArtRepo.remove(cardId);
   }
 
   /** Light tint per trait: colored border and a faint wash of the same color. */

@@ -288,7 +288,8 @@ campaigns/{campaignId}/characters/{characterId}
   armor: { itemId, score, slotsMarked }
   thresholds: { major, severe }
   experiences: [{ name, bonus }]
-  domainCards: { loadout: string[], vault: string[] }
+  cards: [{ id, active }]            // cartas do SRD; active = na mão (máx. 5)
+  domainCards: { loadout, vault }     // texto livre p/ cartas fora dos dados
   inventory: { primaryWeapon, secondaryWeapon, items: [...], gold: { handfuls, bags, chests } }
   backstory: { answers: {...}, appearance, ... }, connections: {...}
   levelHistory: [{ level, choices: [...] }]
@@ -310,6 +311,10 @@ campaigns/{campaignId}/countdowns/{id}
 campaigns/{campaignId}/adversaries/{id}          // biblioteca
 campaigns/{campaignId}/encounter/{instanceId}    // instâncias no combate atual
   adversaryId, label, hpMarked, stressMarked, hidden
+
+campaigns/{campaignId}/drafts/{characterId}        // rascunho do guia de criação
+campaigns/{campaignId}/cardArt/{cardId}            // arte enviada pela mesa p/ o cabeçalho da carta
+  image (data URL ~640px), updatedAt               // arte oficial não pode ser redistribuída (DPCGL 1.5b)
 
 campaigns/{campaignId}/map/state                 // documento único
   imageUrl, grid: { size, offsetX, offsetY, enabled }

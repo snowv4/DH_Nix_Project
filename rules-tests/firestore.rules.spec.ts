@@ -26,7 +26,12 @@ afterAll(() => env.cleanup());
 beforeEach(() => env.clearFirestore());
 
 describe('firestore.rules', () => {
-  const paths = ['campaigns/nix', 'campaigns/nix/characters/kote', 'campaigns/nix/drafts/lyra'];
+  const paths = [
+    'campaigns/nix',
+    'campaigns/nix/characters/kote',
+    'campaigns/nix/drafts/lyra',
+    'campaigns/nix/cardArt/book-of-ava',
+  ];
 
   for (const path of paths) {
     it(`signed-in visitors can read and write ${path}`, async () => {

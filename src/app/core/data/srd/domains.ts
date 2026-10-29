@@ -1,5 +1,19 @@
 import { DomainData, DomainId } from './types';
 
+/** Theme color per domain, used for card headers. */
+export const DOMAIN_COLORS: Record<DomainId, string> = {
+  arcana: '#7c5cff',
+  blade: '#d64545',
+  bone: '#c9b896',
+  codex: '#3b82f6',
+  dread: '#8b2252',
+  grace: '#e879c6',
+  midnight: '#3f3a78',
+  sage: '#3fae5a',
+  splendor: '#f2c94c',
+  valor: '#e07b2c',
+};
+
 export const DOMAINS: Record<DomainId, DomainData> = {
   arcana: {
     id: 'arcana',
