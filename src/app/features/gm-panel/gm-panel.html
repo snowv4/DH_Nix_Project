@@ -183,6 +183,17 @@
                 <p class="text-xs"><span class="text-muted">Arma:</span> {{ c.primaryWeapon }}</p>
               }
             }
+            <div class="mt-auto flex justify-end border-t border-line/60 pt-2">
+              <button
+                type="button"
+                class="btn min-h-9 px-2 text-xs text-muted hover:text-hp"
+                [disabled]="deleting() === c.id"
+                [attr.aria-label]="'Excluir a ficha de ' + c.name"
+                (click)="remove(c)"
+              >
+                {{ deleting() === c.id ? 'Excluindo…' : 'Excluir ficha' }}
+              </button>
+            </div>
           </article>
         } @empty {
           <p class="card text-muted">

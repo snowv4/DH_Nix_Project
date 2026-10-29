@@ -4,3 +4,31 @@
     radial-gradient(60% 50% at 20% 25%, rgb(245 184 61 / 0.35), transparent 70%),
     radial-gradient(55% 55% at 80% 75%, rgb(139 92 246 / 0.4), transparent 70%), #0f0c18;
 }
+
+.logo-glow::before {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgb(120 200 255 / 0.55),
+    rgb(139 92 246 / 0.35) 45%,
+    transparent 72%
+  );
+  filter: blur(6px);
+}
+
+.title-gradient {
+  background: linear-gradient(
+    180deg,
+    #fff3cf 0%,
+    var(--color-hope) 45%,
+    #b9842a 70%,
+    var(--color-fear) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.55)) drop-shadow(0 0 14px rgb(245 184 61 / 0.25));
+}

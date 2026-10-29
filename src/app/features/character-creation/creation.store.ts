@@ -24,6 +24,8 @@ export class CreationStore {
 
   private id = '';
   private saveTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Set once the sheet exists, so leaving the page doesn't re-create the deleted draft. */
+  private finished = false;
 
   readonly draft = signal<CreationDraft>(createEmptyDraft(''));
   readonly loaded = signal(false);
@@ -76,10 +78,16 @@ export class CreationStore {
   /** Creates the real sheet and deletes the draft. Returns the character id. */
   async finish(): Promise<string> {
     clearTimeout(this.saveTimer);
-    const character = buildCharacter(this.draft());
-    // The id was fixed at login; keep it even if the display name gained accents/case.
-    await this.characters.create({ ...character, id: this.id });
-    await this.drafts.remove(this.id);
+    this.finished = true;
+    try {
+      const character = buildCharacter(this.draft());
+      // The id was fixed at login; keep it even if the display name gained accents/case.
+      await this.characters.create({ ...character, id: this.id });
+      await this.drafts.remove(this.id);
+    } catch (e: unknown) {
+      this.finished = false;
+      throw e;
+    }
     return this.id;
   }
 
@@ -91,7 +99,7 @@ export class CreationStore {
   private async flush(): Promise<void> {
     clearTimeout(this.saveTimer);
     this.saveTimer = undefined;
-    if (!this.id || !this.loaded()) return;
+    if (!this.id || !this.loaded() || this.finished) return;
     this.saving.set(true);
     try {
       await this.drafts.save(this.id, this.draft());

@@ -1,6 +1,7 @@
 import { DestroyRef, inject, Injectable, Signal } from '@angular/core';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -56,6 +57,10 @@ export class CharacterRepository {
       [],
       destroyRef,
     );
+  }
+
+  async remove(id: string): Promise<void> {
+    await deleteDoc(doc(this.charactersRef, id));
   }
 
   /** Fire-and-forget friendly: Firestore applies the write locally first (optimistic UI). */

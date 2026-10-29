@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 let env: RulesTestEnvironment;
@@ -46,6 +46,20 @@ describe('firestore.rules', () => {
       await assertFails(getDoc(doc(db, path)));
     });
   }
+
+  it('lets signed-in visitors delete a sheet, but not anonymous requests', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'campaigns/nix/characters/teste'), { name: 'Teste' }),
+    );
+    await assertFails(
+      deleteDoc(doc(env.unauthenticatedContext().firestore(), 'campaigns/nix/characters/teste')),
+    );
+    await assertSucceeds(
+      deleteDoc(
+        doc(env.authenticatedContext('anon-uid').firestore(), 'campaigns/nix/characters/teste'),
+      ),
+    );
+  });
 
   it('denies everything outside campaigns', async () => {
     const db = env.authenticatedContext('anon-uid').firestore();
