@@ -318,9 +318,13 @@ campaigns/{campaignId}/drafts/{characterId}        // rascunho do guia de criaç
 campaigns/{campaignId}/cardArt/{cardId}            // arte enviada pela mesa p/ o cabeçalho da carta
   image (data URL ~640px), updatedAt               // arte oficial não pode ser redistribuída (DPCGL 1.5b)
 
-campaigns/{campaignId}/map/state                 // documento único
-  imageUrl, grid: { size, offsetX, offsetY, enabled }
-  tokens: { [tokenId]: { kind: 'pc'|'adversary', refId, x, y, hidden } }
+campaigns/{campaignId}/map/state                 // documento único, ao vivo (mestre e TV)
+  imageId, width, height
+  grid: { size, offsetX, offsetY, show }
+  fog: { enabled, revealed: ["col,row"] }          // névoa por quadrado; na TV é opaca
+  tokens: { [tokenId]: { kind: 'pc'|'monster', refId, label, color, x, y, size, hidden } }
+
+campaigns/{campaignId}/mapImages/{id}            // imagem do mapa (data URL, até 1600 px) separada do estado
 ```
 
 **Dados do jogo** (classes, ancestralidades, comunidades, cartas, armas, armaduras, tabelas de avanço) ficam em **arquivos JSON estáticos** dentro do app (`src/assets/data/*.json` ou `src/app/core/data/*.ts`), tipados, e **não** no Firestore. Isso economiza leituras e facilita versionar.
@@ -411,8 +415,10 @@ Reorganizadas em 28/10/2026 para refletir o que já existe.
 - Subir de nível (assistente) — exige transcrever cartas de nível 2+ e opções de avanço.
 - Adversários e contadores no painel do mestre. Anotações por sessão.
 
-### Fase 4 — Mapa e TV
-- Mapa com Konva: tokens, névoa, monstros ocultos; popup "visão dos jogadores" para a TV.
+### Fase 4 — Mapa e TV (primeira versão feita)
+- ✅ `/mestre/mapa` com Konva: imagem, grade ajustável, tokens de PJ (retrato) e monstros (ocultos por padrão), névoa pintada por quadrado, zoom/pan e pinça.
+- ✅ `/tv` (popup "Abrir TV"): névoa opaca, sem tokens ocultos nem tokens na névoa, atualiza ao vivo.
+- Depois: animações de ataque/efeitos, jogadores movendo o próprio token, régua de alcance.
 
 ### Fase 5 — Polimento
 - PWA, tema claro, desfazer, exportar ficha, retratos (Storage).

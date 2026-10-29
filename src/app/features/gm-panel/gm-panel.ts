@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { MAX_SUPPORTED_LEVEL } from '../../core/rules/leveling';
 import { Dialog } from '@angular/cdk/dialog';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SessionService } from '../../core/auth/session.service';
 import { findClass } from '../../core/data/srd';
 import { TRAIT_LABELS } from '../../core/data/traits';
@@ -24,6 +24,7 @@ const VIEW_KEY = 'dh-nix.gm-view';
 
 @Component({
   selector: 'app-gm-panel',
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-panel.html',
 })

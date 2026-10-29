@@ -20,6 +20,16 @@ export const routes: Routes = [
       import('./features/character-creation/creation-page').then((m) => m.CreationPage),
   },
   {
+    path: 'mestre/mapa',
+    canActivate: [gmGuard],
+    loadComponent: () => import('./features/map/gm-map-page').then((m) => m.GmMapPage),
+  },
+  {
+    path: 'tv',
+    canActivate: [gmGuard],
+    loadComponent: () => import('./features/map/tv-page').then((m) => m.TvPage),
+  },
+  {
     path: 'mestre',
     canActivate: [gmGuard],
     loadComponent: () => import('./features/gm-panel/gm-panel').then((m) => m.GmPanel),
