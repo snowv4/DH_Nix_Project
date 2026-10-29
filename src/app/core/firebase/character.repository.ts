@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -21,6 +22,12 @@ export class CharacterRepository {
 
   async exists(id: string): Promise<boolean> {
     return (await getDoc(doc(this.charactersRef, id))).exists();
+  }
+
+  /** One-off read for the login dropdown (no live listener needed there). */
+  async listNames(): Promise<{ id: string; name: string }[]> {
+    const snap = await getDocs(query(this.charactersRef, orderBy('name')));
+    return snap.docs.map((d) => ({ id: d.id, name: String(d.data()['name'] ?? d.id) }));
   }
 
   async create(character: Character): Promise<void> {

@@ -14,20 +14,40 @@
     <p class="mt-1 text-center text-sm text-muted">Mesa Nix</p>
 
     @switch (step()) {
-      @case ('name') {
-        <form class="mt-6 flex flex-col gap-3" [formGroup]="nameForm" (ngSubmit)="submitName()">
-          <label for="name" class="label">Login</label>
-          <input
-            id="name"
-            class="field"
-            formControlName="name"
-            placeholder="Nome do seu personagem"
-            autocomplete="off"
-            autocapitalize="words"
-            enterkeyhint="go"
-          />
-          <button type="submit" class="btn-hope mt-1" [disabled]="busy() || name.invalid">
+      @case ('pick') {
+        <form class="mt-6 flex flex-col gap-3" [formGroup]="pickForm" (ngSubmit)="submitPick()">
+          <label for="pick" class="label">Quem é você?</label>
+          <select id="pick" class="field" formControlName="pick" [attr.aria-busy]="loading()">
+            <option value="" disabled>
+              {{ loading() ? 'Carregando personagens…' : 'Escolha seu personagem' }}
+            </option>
+            @if (characterList().length) {
+              <optgroup label="Personagens">
+                @for (c of characterList(); track c.id) {
+                  <option [value]="'char:' + c.id">{{ c.name }}</option>
+                }
+              </optgroup>
+            }
+            @if (draftList().length) {
+              <optgroup label="Em criação">
+                @for (d of draftList(); track d.id) {
+                  <option [value]="'draft:' + d.id">{{ d.name }} (continuar guia)</option>
+                }
+              </optgroup>
+            }
+            <optgroup label="Mesa">
+              <option [value]="gmOption">Mestre</option>
+            </optgroup>
+          </select>
+          <button type="submit" class="btn-hope mt-1" [disabled]="busy() || pick.invalid">
             {{ busy() ? 'Entrando…' : 'Entrar' }}
+          </button>
+          <button
+            type="button"
+            class="btn bg-white text-ink hover:bg-white/90"
+            (click)="goTo('create')"
+          >
+            Criar novo personagem
           </button>
         </form>
       }
@@ -46,23 +66,34 @@
           <button type="submit" class="btn-fear mt-1" [disabled]="busy() || pin.invalid">
             Entrar como mestre
           </button>
-          <button type="button" class="btn-ghost" (click)="back()">Voltar</button>
+          <button type="button" class="btn-ghost" (click)="goTo('pick')">Voltar</button>
         </form>
       }
-      @case ('new') {
-        <div class="mt-6 flex flex-col gap-3">
-          <p class="text-center">
-            Ainda não existe ficha para <strong class="text-hope">{{ name.value.trim() }}</strong
-            >. <br />Como quer começar?
-          </p>
-          <button type="button" class="btn-hope" (click)="startGuide()">
-            {{ hasDraft() ? 'Continuar guia de criação' : 'Guia de criação' }}
+      @case ('create') {
+        <form class="mt-6 flex flex-col gap-3" [formGroup]="createForm" (ngSubmit)="startGuide()">
+          <label for="name" class="label">Nome do novo personagem</label>
+          <input
+            id="name"
+            class="field"
+            formControlName="name"
+            placeholder="Ex.: Lyra"
+            autocomplete="off"
+            autocapitalize="words"
+            enterkeyhint="go"
+          />
+          <button type="submit" class="btn-hope mt-1" [disabled]="busy() || name.invalid">
+            Guia de criação
           </button>
-          <button type="button" class="btn-ghost" [disabled]="busy()" (click)="createBlank()">
+          <button
+            type="button"
+            class="btn-ghost"
+            [disabled]="busy() || name.invalid"
+            (click)="createBlank()"
+          >
             Ficha em branco
           </button>
-          <button type="button" class="btn text-muted" (click)="back()">Não sou eu, voltar</button>
-        </div>
+          <button type="button" class="btn text-muted" (click)="goTo('pick')">Voltar</button>
+        </form>
       }
     }
 

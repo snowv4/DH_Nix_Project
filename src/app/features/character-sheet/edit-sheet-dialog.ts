@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import {
   FormArray,
@@ -8,7 +9,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CLASSES, findClass } from '../../core/data/srd';
+import { ANCESTRIES, CLASSES, COMMUNITIES, findClass } from '../../core/data/srd';
 import { TRAIT_LABELS } from '../../core/data/traits';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { Character, TRAIT_IDS } from '../../core/models/character';
@@ -61,23 +62,45 @@ export class EditSheetDialog {
     primaryWeapon: this.c.primaryWeapon,
     secondaryWeapon: this.c.secondaryWeapon,
     experiences: this.fb.array(
-      this.c.experiences.map((e) => this.experienceGroup(e.name, e.bonus)),
+      this.c.experiences.map((e) => this.experienceGroup(e.name, e.bonus, e.note ?? '')),
     ),
   });
 
+  // toSignal: turns the control's valueChanges stream into a signal so `computed` can react to it.
+  private readonly classId = toSignal(this.form.controls.classId.valueChanges, {
+    initialValue: this.c.classId,
+  });
+
+  /** Dropdown options; a custom value already on the sheet (e.g. "Gigante-Simiah") stays selectable. */
+  protected readonly subclassOptions = computed(() =>
+    withCurrent(findClass(this.classId())?.subclasses.map((s) => s.name) ?? [], this.c.subclass),
+  );
+  protected readonly ancestryOptions = withCurrent(
+    ANCESTRIES.map((a) => a.name),
+    this.c.ancestry,
+  );
+  protected readonly communityOptions = withCurrent(
+    COMMUNITIES.map((c) => c.name),
+    this.c.community,
+  );
+
   protected get experiences(): FormArray<
-    FormGroup<{ name: FormControl<string>; bonus: FormControl<number> }>
+    FormGroup<{ name: FormControl<string>; bonus: FormControl<number>; note: FormControl<string> }>
   > {
     return this.form.controls.experiences;
   }
 
   protected addExperience(): void {
-    this.experiences.push(this.experienceGroup('', 2));
+    this.experiences.push(this.experienceGroup('', 2, ''));
   }
 
   /** Picking a class on a fresh sheet pre-fills its starting Evasion and HP. */
   protected onClassChange(): void {
     const info = findClass(this.form.controls.classId.value);
+    // The old subclass belongs to another class now.
+    if (!info?.subclasses.some((s) => s.name === this.form.controls.subclass.value)) {
+      this.form.controls.subclass.setValue('');
+    }
     if (!info || this.c.classId) return;
     this.form.patchValue({ evasion: info.evasion, hpMax: info.hp });
   }
@@ -116,7 +139,11 @@ export class EditSheetDialog {
     }
   }
 
-  private experienceGroup(name: string, bonus: number) {
-    return this.fb.group({ name, bonus: this.num(bonus, -9, 9) });
+  private experienceGroup(name: string, bonus: number, note: string) {
+    return this.fb.group({ name, bonus: this.num(bonus, -9, 9), note });
   }
+}
+
+function withCurrent(options: string[], current: string): string[] {
+  return current && !options.includes(current) ? [current, ...options] : options;
 }

@@ -17,6 +17,14 @@ export interface Tracked {
 export interface Experience {
   name: string;
   bonus: number;
+  /** Player reminder of when to use it. */
+  note?: string;
+}
+
+/** A domain card from the SRD data the character owns; `active` = in the loadout (max 5). */
+export interface OwnedCard {
+  id: string;
+  active: boolean;
 }
 
 export interface Gold {
@@ -49,7 +57,9 @@ export interface Character {
   secondaryWeapon: string;
   items: string;
   gold: Gold;
+  /** Free-text card notes (kept for manual sheets and cards not in the SRD data yet). */
   domainCards: { loadout: string; vault: string };
+  cards?: OwnedCard[];
   features: string;
   appearance: string;
   background: string;

@@ -11,12 +11,23 @@ import {
   Signal,
 } from '@angular/core';
 import { Dialog } from '@angular/cdk/dialog';
-import { findClass } from '../../core/data/srd';
-import { TRAIT_LABELS } from '../../core/data/traits';
+import { DOMAIN_CARDS, DOMAINS, DomainCard, findCard, findClass } from '../../core/data/srd';
+import { TRAIT_COLORS, TRAIT_LABELS } from '../../core/data/traits';
 import { CharacterRepository } from '../../core/firebase/character.repository';
-import { Character, CharacterPatch, Gold, TRAIT_IDS } from '../../core/models/character';
+import {
+  Character,
+  CharacterPatch,
+  Gold,
+  OwnedCard,
+  TRAIT_IDS,
+  TraitId,
+} from '../../core/models/character';
 import { clamp, toggleSlot } from '../../core/rules/character';
+import { DamageThresholds } from '../../shared/ui/damage-thresholds';
+import { PortraitFrame } from '../../shared/ui/portrait-frame';
+import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 import { ResourceTrack } from '../../shared/ui/resource-track';
+import { DomainCardBlock } from './domain-card-block';
 import { EditSheetDialog } from './edit-sheet-dialog';
 
 type TextField = 'items' | 'features' | 'notes' | 'appearance' | 'background' | 'connections';
@@ -25,7 +36,7 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
 
 @Component({
   selector: 'app-character-sheet',
-  imports: [ResourceTrack],
+  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',
 })
@@ -64,6 +75,33 @@ export class CharacterSheet implements OnInit {
   ];
   protected readonly traitIds = TRAIT_IDS;
   protected readonly traitLabels = TRAIT_LABELS;
+  protected readonly traitColors = TRAIT_COLORS;
+  protected readonly domains = DOMAINS;
+  /** SRD: up to five domain cards in the loadout at once. */
+  protected readonly maxActive = 5;
+  protected readonly portraitBusy = signal(false);
+  protected readonly portraitError = signal('');
+  protected readonly cardError = signal('');
+
+  /** Owned SRD cards, active ones first. */
+  protected readonly ownedCards = computed(() => {
+    const owned = this.character?.()?.cards ?? [];
+    return owned
+      .map((o) => ({ card: findCard(o.id), active: o.active }))
+      .filter((o): o is { card: DomainCard; active: boolean } => !!o.card)
+      .sort((a, b) => Number(b.active) - Number(a.active));
+  });
+  protected readonly activeCount = computed(() => this.ownedCards().filter((o) => o.active).length);
+
+  /** Cards not owned yet, from the class domains when the class is known. */
+  protected readonly addableCards = computed(() => {
+    const c = this.character?.();
+    const owned = new Set((c?.cards ?? []).map((o) => o.id));
+    const domains = c ? findClass(c.classId)?.domains : undefined;
+    return DOMAIN_CARDS.filter(
+      (card) => !owned.has(card.id) && (!domains || domains.includes(card.domain)),
+    );
+  });
 
   protected readonly className = computed(() => {
     const c = this.character?.();
@@ -110,6 +148,64 @@ export class CharacterSheet implements OnInit {
     const value = (event.target as HTMLTextAreaElement).value;
     if (value !== c.domainCards[field])
       this.save({ domainCards: { ...c.domainCards, [field]: value } });
+  }
+
+  protected async setPortrait(file: File): Promise<void> {
+    this.portraitBusy.set(true);
+    this.portraitError.set('');
+    try {
+      this.save({ portraitUrl: await resizeImageToDataUrl(file) });
+    } catch (e: unknown) {
+      console.error(e);
+      this.portraitError.set('Não consegui usar essa imagem. Tente outra (JPG ou PNG).');
+    } finally {
+      this.portraitBusy.set(false);
+    }
+  }
+
+  /** Light tint per trait: colored border and a faint wash of the same color. */
+  protected traitStyle(t: TraitId): string {
+    const color = TRAIT_COLORS[t];
+    return `border-color: color-mix(in srgb, ${color} 55%, transparent); background: color-mix(in srgb, ${color} 12%, var(--color-panel-2));`;
+  }
+
+  protected saveExperienceNote(c: Character, index: number, event: Event): void {
+    const note = (event.target as HTMLTextAreaElement).value.trim();
+    if (note === (c.experiences[index]?.note ?? '')) return;
+    this.save({ experiences: c.experiences.map((e, i) => (i === index ? { ...e, note } : e)) });
+  }
+
+  protected toggleCard(c: Character, id: string): void {
+    const cards = c.cards ?? [];
+    const target = cards.find((o) => o.id === id);
+    if (!target) return;
+    if (!target.active && cards.filter((o) => o.active).length >= this.maxActive) {
+      this.cardError.set(
+        `A mão já tem ${this.maxActive} cartas ativas. Mande uma para o cofre antes.`,
+      );
+      return;
+    }
+    this.cardError.set('');
+    this.saveCardList(cards.map((o) => (o.id === id ? { ...o, active: !o.active } : o)));
+  }
+
+  protected removeCard(c: Character, id: string): void {
+    this.cardError.set('');
+    this.saveCardList((c.cards ?? []).filter((o) => o.id !== id));
+  }
+
+  protected addCard(c: Character, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const id = select.value;
+    select.value = '';
+    if (!id) return;
+    const cards = c.cards ?? [];
+    const active = cards.filter((o) => o.active).length < this.maxActive;
+    this.saveCardList([...cards, { id, active }]);
+  }
+
+  private saveCardList(cards: OwnedCard[]): void {
+    this.save({ cards });
   }
 
   protected stepGold(c: Character, coin: keyof Gold, delta: number): void {

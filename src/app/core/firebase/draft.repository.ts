@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { collection, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { CreationDraft } from '../models/creation';
 import { CAMPAIGN_ID } from './campaign.repository';
 import { FirebaseService } from './firebase.service';
@@ -13,6 +13,11 @@ export class DraftRepository {
   async load(id: string): Promise<CreationDraft | null> {
     const snap = await getDoc(doc(this.draftsRef, id));
     return snap.exists() ? (snap.data() as CreationDraft) : null;
+  }
+
+  async listNames(): Promise<{ id: string; name: string }[]> {
+    const snap = await getDocs(this.draftsRef);
+    return snap.docs.map((d) => ({ id: d.id, name: String(d.data()['name'] || d.id) }));
   }
 
   async exists(id: string): Promise<boolean> {

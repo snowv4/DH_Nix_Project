@@ -27,6 +27,13 @@ import { CreationStore } from '../creation.store';
             (input)="set(i, value($event))"
             placeholder="Ex.: Criado nas ruas"
           />
+          <input
+            class="field text-sm"
+            [value]="draft().experienceNotes?.[i] ?? ''"
+            (input)="setNote(i, value($event))"
+            placeholder="Quando usar? Ex.: perceber golpes e mentiras (opcional)"
+            [attr.aria-label]="'Quando usar a Experiência ' + (i + 1)"
+          />
         </label>
       }
     </div>
@@ -88,6 +95,12 @@ export class ExperiencesStep {
     const exps: [string, string] = [this.draft().experiences[0], this.draft().experiences[1]];
     exps[i] = v;
     this.store.update({ experiences: exps });
+  }
+
+  protected setNote(i: number, v: string): void {
+    const notes: [string, string] = [...(this.draft().experienceNotes ?? ['', ''])];
+    notes[i] = v;
+    this.store.update({ experienceNotes: notes });
   }
 
   /** Fills the first empty slot, or replaces the second when both are filled. */

@@ -197,12 +197,20 @@ describe('buildCharacter', () => {
     expect(c.hp).toEqual({ max: 6, marked: 0 });
     expect(c.stress.max).toBe(7);
     expect(c.experiences).toEqual([
-      { name: 'Ladra de rua', bonus: 2 },
-      { name: 'Mãos Rápidas', bonus: 2 },
+      { name: 'Ladra de rua', bonus: 2, note: '' },
+      { name: 'Mãos Rápidas', bonus: 2, note: '' },
     ]);
     expect(c.features).toContain('Passo Sombrio');
-    expect(c.domainCards.loadout).toContain('Abrir e Surrupiar');
+    expect(c.cards).toEqual([
+      { id: 'pick-and-pull', active: true },
+      { id: 'deft-deceiver', active: true },
+    ]);
     expect(c.items).toContain('Poção de Vida Menor');
+  });
+
+  it('keeps the Experience notes', () => {
+    const c = buildCharacter(rogue({ experienceNotes: ['Becos e telhados', ''] }), 0);
+    expect(c.experiences[0].note).toBe('Becos e telhados');
   });
 
   it('gives Clank +1 to the chosen Experience', () => {

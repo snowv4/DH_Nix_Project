@@ -13,6 +13,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 0,
+    cost: '1 Esperança',
     text: 'Você tem um amuleto muito pessoal que pode ser imbuído de magia protetora e segurado como proteção por você ou por um aliado. Descreva o que é e por que é importante para você. Quem segura a proteção pode gastar 1 Esperança para reduzir o dano recebido em 1d8. Se o Dado de Proteção der 8, o poder acaba depois de reduzir o dano neste turno; ele recarrega de graça no seu próximo descanso.',
   },
   {
@@ -23,6 +24,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: 'Marcadores · 1 Estresse recarrega',
     text: 'No início de uma sessão, coloque nesta carta marcadores iguais ao seu atributo de Conjuração. Faça uma rolagem de Conjuração contra um alvo a até Longe e gaste quantos marcadores quiser para liberar energia bruta contra ele. Em sucesso, role d10 iguais aos marcadores gastos e cause esse dano mágico. Marque 1 Estresse para reabastecer a carta (até o seu atributo de Conjuração). No fim da sessão, limpe os não usados.',
   },
   {
@@ -33,6 +35,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: '1 Esperança',
     text: 'Gaste 1 Esperança para permitir que uma criatura que você toca escale paredes e tetos tão fácil quanto anda no chão. Dura até o fim da cena ou até você conjurar Andar nas Paredes de novo.',
   },
   // Blade
@@ -44,6 +47,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: '1 Estresse',
     text: 'Ao receber dano Grave, você pode marcar 1 Estresse para reduzir a gravidade em um limiar.',
   },
   {
@@ -54,6 +58,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: 'Sem custo',
     text: 'Ao rolar seus dados de dano, você pode rolar de novo qualquer 1 ou 2.',
   },
   {
@@ -64,6 +69,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: '1 Esperança',
     text: 'Ao acertar um ataque contra um alvo a até Muito Perto, você pode gastar 1 Esperança para usar o mesmo ataque contra todos os outros alvos a até Muito Perto. Os adversários adicionais atingidos sofrem metade do dano.',
   },
   // Bone
@@ -75,6 +81,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: '1 Estresse · 1× por descanso',
     text: 'Uma vez por descanso, marque 1 Estresse para correr para qualquer ponto a até Longe sem fazer rolagem de Agilidade. Se terminar Corpo a corpo de um adversário e atacá-lo imediatamente, ganhe +1 nessa rolagem de ataque.',
   },
   {
@@ -85,6 +92,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: '1 Estresse',
     text: 'Quando for alvo de um ataque feito de fora do alcance Corpo a corpo, você pode marcar 1 Estresse para rolar 1d4 e somar o resultado à sua Evasão contra esse ataque.',
   },
   {
@@ -95,6 +103,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: 'Passiva',
     text: 'Ganhe bônus na Evasão igual à metade da sua Agilidade.',
   },
   // Codex
@@ -106,6 +115,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'grimoire',
     recallCost: 2,
+    cost: 'Varia por magia',
     text: 'Empurrão de Poder: faça uma rolagem de Conjuração contra um alvo Corpo a corpo. Em sucesso, ele é arremessado para Longe e sofre d10+2 de dano mágico com sua Proficiência.\nArmadura de Tava: gaste 1 Esperança para dar a um alvo que você toca +1 no Valor de Armadura até o próximo descanso dele ou até você conjurar Armadura de Tava de novo.\nEspinho de Gelo: faça uma rolagem de Conjuração (12) para invocar um grande espinho de gelo a até Longe. Se usá-lo como arma, faça a rolagem contra a Dificuldade do alvo; em sucesso, cause d6 de dano físico com sua Proficiência.',
   },
   {
@@ -116,6 +126,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'grimoire',
     recallCost: 2,
+    cost: 'Varia por magia',
     text: 'Sono: faça uma rolagem de Conjuração contra um alvo a até Muito Perto. Em sucesso, ele fica Adormecido até sofrer dano ou o mestre gastar 1 Medo no turno dele para remover a condição.\nBarragem Arcana: uma vez por descanso, gaste quanta Esperança quiser e dispare projéteis mágicos num alvo a até Perto. Role d6 iguais à Esperança gasta e cause esse dano mágico.\nTelepatia: gaste 1 Esperança para abrir uma linha de comunicação mental com um alvo que você vê. Dura até o seu próximo descanso ou até conjurar Telepatia de novo.',
   },
   {
@@ -126,6 +137,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'grimoire',
     recallCost: 2,
+    cost: 'Varia por magia',
     text: 'Chama Selvagem: faça uma rolagem de Conjuração contra até três adversários Corpo a corpo. Os atingidos sofrem 2d6 de dano mágico e marcam 1 Estresse enquanto chamas saem da sua mão.\nMão Mágica: você conjura uma mão mágica do tamanho e da força da sua, a até Longe.\nNévoa Misteriosa: faça uma rolagem de Conjuração (13) para criar uma neblina densa e temporária numa área fixa a até Muito Perto. A neblina obscurece totalmente a área e tudo nela.',
   },
   // Dread
@@ -137,6 +149,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: 'Rolagem de Conjuração',
     text: 'Faça uma rolagem de Conjuração contra um alvo a até Longe. Em sucesso:\n• Com Esperança, cause d6+1 de dano mágico com sua Proficiência. Com Medo, cause d10+1 de dano mágico com sua Proficiência.\n• O próximo ataque bem-sucedido do alvo causa metade do dano.\nEm falha, você precisa gastar 1 Esperança ou marcar 1 Estresse.',
   },
   {
@@ -147,6 +160,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: '1 Estresse · 1× por descanso',
     text: 'Uma vez por descanso, você pode marcar 1 Estresse para se envolver em energia sombria. Coloque nesta carta marcadores iguais ao Medo na reserva do mestre. Depois que fizerem uma rolagem de ataque contra você, gaste quantos marcadores quiser para dar −1 ao resultado por marcador. No fim da cena, limpe os não usados.',
   },
   {
@@ -157,6 +171,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 0,
+    cost: 'Rolagem de Conjuração',
     text: 'Você fala magicamente com uma criatura que vê, atormentando-a com suas palavras. Faça uma rolagem de Conjuração contra ela. Em sucesso, ela marca 1 Estresse e fica paralisada de terror, temporariamente Imobilizada.',
   },
   // Grace
@@ -168,6 +183,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: '1 Esperança',
     text: 'Gaste 1 Esperança para ganhar vantagem numa rolagem para enganar alguém ou fazê-lo acreditar numa mentira sua.',
   },
   {
@@ -178,6 +194,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 0,
+    cost: 'Rolagem de Conjuração',
     text: 'Faça uma rolagem de Conjuração contra um alvo a até Perto. Em sucesso, ele fica temporariamente Arrebatado: a atenção dele se fixa em você, estreitando a visão e abafando qualquer som que não seja sua voz. Uma vez por descanso, em sucesso, você pode marcar 1 Estresse para forçar o alvo Arrebatado a marcar 1 Estresse também.',
   },
   {
@@ -188,6 +205,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: 'Marcadores (Presença)',
     text: 'Sua fala tem poder. Depois de um descanso longo, coloque nesta carta marcadores iguais à sua Presença. Ao falar com um aliado, gaste um marcador para dar a ele um benefício:\n• O aliado limpa 1 Estresse.\n• O aliado limpa 1 PV.\n• O aliado ganha 1 Esperança.\nNo descanso longo, limpe os marcadores não usados.',
   },
   // Midnight
@@ -199,6 +217,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Passiva',
     text: 'Você tem vantagem em rolagens de ação para abrir fechaduras não mágicas, desarmar armadilhas não mágicas ou roubar itens de um alvo (com furtividade ou à força).',
   },
   {
@@ -209,6 +228,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: '1 Esperança',
     text: 'Gaste 1 Esperança para fazer uma rolagem de Conjuração e invocar lâminas de arremesso contra todos os alvos a até Muito Perto. Os atingidos sofrem d8+2 de dano mágico com sua Proficiência. Se um alvo atingido estiver Vulnerável, sofre 1d8 de dano extra.',
   },
   {
@@ -219,6 +239,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 0,
+    cost: '1 Estresse',
     text: 'Com alguns minutos para se preparar, marque 1 Estresse para assumir a aparência de qualquer humanoide que você imagine com clareza. Disfarçado, você tem vantagem em rolagens de Presença para evitar escrutínio. Coloque nesta carta marcadores iguais ao seu atributo de Conjuração; a cada ação disfarçado, gaste um. Depois que a ação que gasta o último marcador se resolver, o disfarce cai.',
   },
   // Sage
@@ -230,6 +251,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Esperança à escolha',
     text: 'Ao rastrear uma criatura ou grupo específico pelos sinais de passagem, você pode gastar quanta Esperança quiser e fazer ao mestre o mesmo número de perguntas desta lista:\n• Para que direção foram?\n• Há quanto tempo passaram por aqui?\n• O que estavam fazendo neste lugar?\n• Quantos estavam aqui?\nAo encontrar criaturas rastreadas assim, ganhe +1 de Evasão contra elas.',
   },
   {
@@ -240,6 +262,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Rolagem de Instinto (12)',
     text: 'Você fala a língua do mundo natural. Para falar com plantas e animais ao redor, faça uma rolagem de Instinto (12). Em sucesso, eles contam o que sabem; com Medo, o conhecimento pode ser limitado ou ter um custo. Além disso, antes de uma rolagem de Conjuração num ambiente natural, você pode gastar 1 Esperança para ganhar +2 na rolagem.',
   },
   {
@@ -250,6 +273,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: 'Rolagem de Conjuração',
     text: 'Faça uma rolagem de Conjuração contra um alvo a até Longe. Em sucesso, raízes e vinhas saem do chão, causando 1d8+1 de dano físico e deixando o alvo temporariamente Imobilizado. Além disso, em sucesso, você pode gastar 1 Esperança para Imobilizar temporariamente outro adversário a até Muito Perto do alvo.',
   },
   // Splendor
@@ -261,6 +285,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: '1 Esperança',
     text: 'Faça uma rolagem de Conjuração contra um alvo a até Longe. Em sucesso, gaste 1 Esperança para lançar um raio de luz cintilante, causando d8+2 de dano mágico com sua Proficiência. O alvo fica temporariamente Vulnerável e brilha intensamente até a condição acabar.',
   },
   {
@@ -271,6 +296,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'spell',
     recallCost: 1,
+    cost: '2 Esperança',
     text: 'Você impõe as mãos sobre uma criatura e canaliza magia de cura para fechar feridas. Com alguns minutos de foco no alvo, gaste 2 Esperança para limpar 1 PV ou 1 Estresse dele. Uma vez por descanso longo, se usar esse tempo aprendendo algo novo sobre a pessoa ou revelando algo sobre você, limpe 2 PV ou 2 Estresse em vez disso.',
   },
   {
@@ -281,6 +307,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Sem custo · 1× por descanso',
     text: 'Uma vez por descanso, depois que um aliado faz uma rolagem de ação mas antes das consequências, você pode oferecer ajuda ou palavras de apoio. Se fizer isso, o aliado pode rolar os dados de novo.',
   },
   // Valor
@@ -292,6 +319,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Passiva',
     text: 'Quando decide não usar armadura, seu Valor de Armadura base é 3 + sua Força, e seus limiares de dano base são:\n• Patamar 1: 9/19\n• Patamar 2: 11/24\n• Patamar 3: 13/31\n• Patamar 4: 15/38',
   },
   {
@@ -302,6 +330,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 0,
+    cost: 'Ataque com arma',
     text: 'Faça um ataque com sua arma primária contra um alvo Corpo a corpo. Em sucesso, cause dano e empurre-o para Perto. Com sucesso com Esperança, some 1d6 ao dano. Além disso, você pode gastar 1 Esperança para deixá-lo temporariamente Vulnerável.',
   },
   {
@@ -312,6 +341,7 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     level: 1,
     type: 'ability',
     recallCost: 1,
+    cost: '1 Estresse',
     text: 'Quando um aliado a até Muito Perto for receber dano, você pode marcar 1 Estresse para se colocar na frente e virar o alvo do ataque. Ao receber o dano desse ataque, você pode marcar quantos Espaços de Armadura quiser.',
   },
 ];

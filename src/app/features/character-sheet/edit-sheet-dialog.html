@@ -29,15 +29,32 @@
       </label>
       <label class="col-span-2 flex flex-col gap-1 sm:col-span-1">
         <span class="text-sm text-muted">Subclasse</span>
-        <input class="field" formControlName="subclass" />
+        <select class="field" formControlName="subclass">
+          <option value="">
+            {{ subclassOptions().length ? '—' : 'Escolha a classe primeiro' }}
+          </option>
+          @for (s of subclassOptions(); track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm text-muted">Ancestralidade</span>
-        <input class="field" formControlName="ancestry" />
+        <select class="field" formControlName="ancestry">
+          <option value="">—</option>
+          @for (a of ancestryOptions; track a) {
+            <option [value]="a">{{ a }}</option>
+          }
+        </select>
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm text-muted">Comunidade</span>
-        <input class="field" formControlName="community" />
+        <select class="field" formControlName="community">
+          <option value="">—</option>
+          @for (c of communityOptions; track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-sm text-muted">Pronomes</span>
@@ -164,9 +181,9 @@
     <fieldset class="flex flex-col gap-2" formArrayName="experiences">
       <legend class="label mb-2">Experiências</legend>
       @for (e of experiences.controls; track e; let i = $index) {
-        <div class="flex gap-2" [formGroupName]="i">
+        <div class="flex flex-wrap gap-2" [formGroupName]="i">
           <input
-            class="field flex-1"
+            class="field min-w-0 flex-1"
             formControlName="name"
             placeholder="Ex.: Criado nas ruas"
             [attr.aria-label]="'Experiência ' + (i + 1)"
@@ -186,6 +203,12 @@
           >
             ✕
           </button>
+          <input
+            class="field w-full text-sm"
+            formControlName="note"
+            placeholder="Quando usar? (anotação)"
+            [attr.aria-label]="'Quando usar a Experiência ' + (i + 1)"
+          />
         </div>
       }
       <button type="button" class="btn-ghost self-start text-sm" (click)="addExperience()">

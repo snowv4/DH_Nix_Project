@@ -1,17 +1,23 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { LicenseNotice } from '../../shared/ui/license-notice';
 import { isGmPin } from '../../core/auth/pin';
 import { SessionService } from '../../core/auth/session.service';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { DraftRepository } from '../../core/firebase/draft.repository';
 import { FirebaseService } from '../../core/firebase/firebase.service';
 import { characterIdFromName, createBlankCharacter } from '../../core/rules/character';
+import { LicenseNotice } from '../../shared/ui/license-notice';
 
-type Step = 'name' | 'pin' | 'new';
+type Step = 'pick' | 'pin' | 'create';
 
-const GM_KEYWORD = 'mestre';
+/** Dropdown values: `char:<id>`, `draft:<id>` or `gm`. */
+const GM_OPTION = 'gm';
+
+interface Entry {
+  id: string;
+  name: string;
+}
 
 @Component({
   selector: 'app-login-page',
@@ -20,19 +26,25 @@ const GM_KEYWORD = 'mestre';
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
   private readonly firebase = inject(FirebaseService);
   private readonly characters = inject(CharacterRepository);
   private readonly drafts = inject(DraftRepository);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
-  protected readonly step = signal<Step>('name');
+  protected readonly step = signal<Step>('pick');
   protected readonly busy = signal(false);
+  protected readonly loading = signal(true);
   protected readonly error = signal('');
-  /** A creation draft already exists for the typed name. */
-  protected readonly hasDraft = signal(false);
+  protected readonly characterList = signal<Entry[]>([]);
+  protected readonly draftList = signal<Entry[]>([]);
+  protected readonly gmOption = GM_OPTION;
 
+  protected readonly pick = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required],
+  });
   protected readonly name = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required],
@@ -42,29 +54,26 @@ export class LoginPage {
     validators: [Validators.required],
   });
   // Forms need a FormGroup so (ngSubmit) intercepts the native submit instead of reloading the page.
-  protected readonly nameForm = new FormGroup({ name: this.name });
+  protected readonly pickForm = new FormGroup({ pick: this.pick });
+  protected readonly createForm = new FormGroup({ name: this.name });
   protected readonly pinForm = new FormGroup({ pin: this.pin });
 
-  protected async submitName(): Promise<void> {
-    const typed = this.name.value.trim();
-    if (!typed) return;
-    if (characterIdFromName(typed) === GM_KEYWORD) {
+  ngOnInit(): void {
+    void this.loadList();
+  }
+
+  protected async submitPick(): Promise<void> {
+    const value = this.pick.value;
+    if (value === GM_OPTION) {
       this.step.set('pin');
       return;
     }
-    if (!characterIdFromName(typed)) {
-      this.error.set('Use letras ou números no nome.');
-      return;
+    const [kind, id] = value.split(':');
+    if (kind === 'char') this.enterSheet(id);
+    if (kind === 'draft') {
+      const draft = this.draftList().find((d) => d.id === id);
+      this.openGuide(id, draft?.name ?? id);
     }
-    await this.run(async () => {
-      const id = characterIdFromName(typed);
-      if (await this.characters.exists(id)) {
-        this.enterSheet(id);
-      } else {
-        this.hasDraft.set(await this.drafts.exists(id));
-        this.step.set('new');
-      }
-    });
   }
 
   protected async submitPin(): Promise<void> {
@@ -79,7 +88,32 @@ export class LoginPage {
     });
   }
 
+  /** Validates the new name; returns its id or null (with an error shown). */
+  private newId(): string | null {
+    const id = characterIdFromName(this.name.value);
+    if (!id) {
+      this.error.set('Use letras ou números no nome.');
+      return null;
+    }
+    if (id === 'mestre') {
+      this.error.set('Esse nome é reservado.');
+      return null;
+    }
+    if (this.characterList().some((c) => c.id === id)) {
+      this.error.set('Já existe um personagem com esse nome. Escolha na lista.');
+      return null;
+    }
+    this.error.set('');
+    return id;
+  }
+
+  protected startGuide(): void {
+    const id = this.newId();
+    if (id) this.openGuide(id, this.name.value.trim());
+  }
+
   protected async createBlank(): Promise<void> {
+    if (!this.newId()) return;
     await this.run(async () => {
       const character = createBlankCharacter(this.name.value);
       await this.characters.create(character);
@@ -87,17 +121,29 @@ export class LoginPage {
     });
   }
 
-  protected startGuide(): void {
-    const name = this.name.value.trim();
-    const id = characterIdFromName(name);
-    this.session.start({ kind: 'player', characterId: id });
-    void this.router.navigate(['/criar', id], { queryParams: { nome: name } });
-  }
-
-  protected back(): void {
+  protected goTo(step: Step): void {
     this.error.set('');
     this.pin.reset();
-    this.step.set('name');
+    this.step.set(step);
+  }
+
+  private async loadList(): Promise<void> {
+    this.loading.set(true);
+    await this.run(async () => {
+      const [chars, drafts] = await Promise.all([
+        this.characters.listNames(),
+        this.drafts.listNames(),
+      ]);
+      this.characterList.set(chars);
+      // A finished character supersedes a leftover draft with the same id.
+      this.draftList.set(drafts.filter((d) => !chars.some((c) => c.id === d.id)));
+    });
+    this.loading.set(false);
+  }
+
+  private openGuide(id: string, name: string): void {
+    this.session.start({ kind: 'player', characterId: id });
+    void this.router.navigate(['/criar', id], { queryParams: { nome: name } });
   }
 
   private enterSheet(id: string): void {

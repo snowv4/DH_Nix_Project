@@ -85,20 +85,37 @@
               class="-m-1 rounded-lg p-1 text-left hover:bg-panel-2"
               (click)="open(c)"
             >
-              <h3
-                class="font-display text-lg font-bold text-white underline-offset-4 hover:underline"
-              >
-                {{ c.name }}
-              </h3>
-              <p class="text-xs text-muted">
-                Nv {{ c.level }}
-                @if (className(c)) {
-                  · {{ className(c) }}
+              <span class="flex items-center gap-3">
+                @if (c.portraitUrl) {
+                  <img
+                    class="size-12 shrink-0 rounded-lg border-2 border-hope/70 object-cover"
+                    [src]="c.portraitUrl"
+                    alt=""
+                  />
+                } @else {
+                  <span
+                    class="grid size-12 shrink-0 place-items-center rounded-lg border-2 border-hope/40 bg-panel-2 font-display text-xl text-hope"
+                    aria-hidden="true"
+                    >{{ c.name.charAt(0).toUpperCase() }}</span
+                  >
                 }
-                @if (c.subclass) {
-                  · {{ c.subclass }}
-                }
-              </p>
+                <span class="min-w-0">
+                  <span
+                    class="block font-display text-lg font-bold text-white underline-offset-4 hover:underline"
+                  >
+                    {{ c.name }}
+                  </span>
+                  <span class="block text-xs text-muted">
+                    Nv {{ c.level }}
+                    @if (className(c)) {
+                      · {{ className(c) }}
+                    }
+                    @if (c.subclass) {
+                      · {{ c.subclass }}
+                    }
+                  </span>
+                </span>
+              </span>
             </button>
 
             <dl class="grid grid-cols-2 gap-2 text-sm">

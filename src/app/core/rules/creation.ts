@@ -1,7 +1,5 @@
 import {
-  CARD_TYPE_LABELS,
   ClassData,
-  DOMAINS,
   DomainCard,
   Feature,
   RANGE_LABELS,
@@ -460,14 +458,6 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
   if (community) features.push(featureLine(`Comunidade ${community.name}`, community.feature));
   features.push(...classChoiceLines(d));
 
-  const cards = d.domainCardIds
-    .map((id) => findCard(id))
-    .filter((c): c is DomainCard => !!c)
-    .map(
-      (c) =>
-        `${c.name} (${c.nameEn}) — ${DOMAINS[c.domain].name}, ${CARD_TYPE_LABELS[c.type]}, recuperação ${c.recallCost}\n${c.text}`,
-    );
-
   const potion = STARTING_POTIONS.find((p) => p.id === d.potionId);
   const items = [
     ...STARTING_ITEMS,
@@ -500,6 +490,7 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
     experiences: d.experiences.map((name, i) => ({
       name: name.trim(),
       bonus: EXPERIENCE_BONUS + (hasClankDesign(d) && d.clankBonusIndex === i ? 1 : 0),
+      note: (d.experienceNotes?.[i] ?? '').trim(),
     })),
     primaryWeapon:
       d.primaryWeaponId === BRAWLER_STRIKE_ID
@@ -510,7 +501,8 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
     secondaryWeapon: secondary ? describeWeapon(secondary, cast) : '',
     items: items.join('\n'),
     gold: { handfuls: 1, bags: 0, chests: 0 },
-    domainCards: { loadout: cards.join('\n\n'), vault: '' },
+    domainCards: { loadout: '', vault: '' },
+    cards: d.domainCardIds.filter((id) => !!findCard(id)).map((id) => ({ id, active: true })),
     features: features.join('\n\n'),
     appearance: d.appearance.trim(),
     background: questionsAndAnswers(cls?.backgroundQuestions ?? [], d.backgroundAnswers),

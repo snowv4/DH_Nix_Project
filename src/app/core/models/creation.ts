@@ -33,6 +33,8 @@ export interface CreationDraft {
   potionId: string;
   classItem: string;
   experiences: [string, string];
+  /** Optional reminders of when to use each Experience (missing on older drafts). */
+  experienceNotes?: [string, string];
   /** Clank "Purposeful Design": index of the Experience that gets +1, or -1. */
   clankBonusIndex: number;
   domainCardIds: string[];
@@ -59,6 +61,7 @@ export function createEmptyDraft(name: string, now = Date.now()): CreationDraft 
     potionId: '',
     classItem: '',
     experiences: ['', ''],
+    experienceNotes: ['', ''],
     clankBonusIndex: -1,
     domainCardIds: [],
     pronouns: '',

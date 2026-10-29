@@ -107,6 +107,8 @@ export interface DomainCard {
   level: number;
   type: CardType;
   recallCost: number;
+  /** Short summary of what using the card costs, taken from its text (e.g. "1 Esperança"). */
+  cost: string;
   text: string;
 }
 

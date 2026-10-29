@@ -8,16 +8,19 @@
   </div>
 } @else {
   <div class="mx-auto flex w-full max-w-6xl flex-col gap-4 p-3 sm:p-4">
-    <!-- Header -->
-    <header class="card flex flex-wrap items-center gap-3">
-      <div
-        class="grid size-14 shrink-0 place-items-center rounded-full border-2 border-hope bg-panel-2 font-display text-2xl text-hope"
-        aria-hidden="true"
-      >
-        {{ c.name.charAt(0).toUpperCase() }}
+    <!-- Header: portrait above the name on phones, beside it from sm up -->
+    <header class="card flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+      <div class="w-44 shrink-0 sm:w-28">
+        <app-portrait-frame
+          [src]="c.portraitUrl"
+          [name]="c.name"
+          [editable]="true"
+          [busy]="portraitBusy()"
+          (picked)="setPortrait($event)"
+        />
       </div>
-      <div class="min-w-0 flex-1">
-        <h1 class="truncate font-display text-2xl font-bold">{{ c.name }}</h1>
+      <div class="min-w-0 flex-1 text-center sm:text-left">
+        <h1 class="font-display text-3xl font-bold break-words sm:text-2xl">{{ c.name }}</h1>
         <p class="text-sm text-muted">
           Nível {{ c.level }}
           @if (className()) {
@@ -30,10 +33,24 @@
         @if (origin(c); as o) {
           <p class="text-sm text-muted">{{ o }}</p>
         }
+        @if (portraitError()) {
+          <p class="mt-1 text-sm text-hp" role="alert">{{ portraitError() }}</p>
+        }
       </div>
-      <div class="flex w-full gap-2 sm:w-auto">
+      <div class="flex w-full gap-2 sm:w-auto sm:flex-col">
         <button type="button" class="btn-ghost flex-1" (click)="edit(c)">Editar</button>
-        <button type="button" class="btn-ghost" (click)="exit.emit()">{{ exitLabel() }}</button>
+        @if (c.portraitUrl) {
+          <button
+            type="button"
+            class="btn-ghost flex-1 text-sm text-muted"
+            (click)="save({ portraitUrl: '' })"
+          >
+            Remover retrato
+          </button>
+        }
+        <button type="button" class="btn-ghost flex-1" (click)="exit.emit()">
+          {{ exitLabel() }}
+        </button>
       </div>
     </header>
 
@@ -93,6 +110,11 @@
           }
         </div>
 
+        <div class="card">
+          <p class="label mb-3">Pontos de vida e limiares</p>
+          <app-damage-thresholds [major]="c.thresholds.major" [severe]="c.thresholds.severe" />
+        </div>
+
         <div class="grid grid-cols-3 gap-2 text-center">
           <div class="card px-2">
             <p class="label">Evasão</p>
@@ -107,24 +129,6 @@
             <p class="font-display text-3xl">{{ c.level }}</p>
           </div>
         </div>
-
-        <div class="card">
-          <p class="label">Limiares de dano</p>
-          <div class="mt-2 grid grid-cols-3 gap-1 text-center text-sm">
-            <div class="rounded-lg bg-panel-2 p-2">
-              <p class="text-muted">Menor</p>
-              <p class="font-semibold">1 PV</p>
-            </div>
-            <div class="rounded-lg bg-panel-2 p-2">
-              <p class="text-muted">Maior ≥ {{ c.thresholds.major }}</p>
-              <p class="font-semibold">2 PV</p>
-            </div>
-            <div class="rounded-lg bg-panel-2 p-2">
-              <p class="text-muted">Grave ≥ {{ c.thresholds.severe }}</p>
-              <p class="font-semibold">3 PV</p>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- Traits & experiences -->
@@ -134,9 +138,12 @@
           <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
             @for (t of traitIds; track t) {
               <div
-                class="flex min-h-16 flex-col items-center justify-center rounded-xl border border-line bg-panel-2"
+                class="flex min-h-16 flex-col items-center justify-center rounded-xl border"
+                [style]="traitStyle(t)"
               >
-                <span class="text-sm text-muted">{{ traitLabels[t] }}</span>
+                <span class="text-sm font-semibold" [style.color]="traitColors[t]">{{
+                  traitLabels[t]
+                }}</span>
                 <span class="font-display text-2xl">{{ signed(c.traits[t]) }}</span>
               </div>
             }
@@ -145,10 +152,22 @@
         <div class="card">
           <p class="label">Experiências</p>
           <ul class="mt-2 flex flex-col gap-2">
-            @for (e of c.experiences; track $index) {
-              <li class="flex items-center justify-between rounded-lg bg-panel-2 px-3 py-2">
-                <span [class.text-muted]="!e.name">{{ e.name || 'Sem nome' }}</span>
-                <span class="font-semibold text-hope">{{ signed(e.bonus) }}</span>
+            @for (e of c.experiences; track $index; let i = $index) {
+              <li class="rounded-lg bg-panel-2 px-3 py-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-semibold" [class.text-muted]="!e.name">{{
+                    e.name || 'Sem nome'
+                  }}</span>
+                  <span class="font-semibold text-hope">{{ signed(e.bonus) }}</span>
+                </div>
+                <textarea
+                  class="mt-1 w-full resize-none bg-transparent text-sm text-muted field-sizing-content placeholder:text-muted/50 focus:text-white focus:outline-none"
+                  rows="1"
+                  placeholder="Toque para anotar quando usar…"
+                  [attr.aria-label]="'Quando usar ' + e.name"
+                  [value]="e.note ?? ''"
+                  (blur)="saveExperienceNote(c, i, $event)"
+                ></textarea>
               </li>
             } @empty {
               <li class="text-sm text-muted">Nenhuma experiência.</li>
@@ -159,7 +178,7 @@
           <label class="label" for="features">Características</label>
           <textarea
             id="features"
-            class="field mt-2 min-h-32"
+            class="field mt-2 min-h-[28rem] text-[15px] leading-relaxed field-sizing-content"
             placeholder="Classe, subclasse, ancestralidade, comunidade, característica de Esperança…"
             [value]="c.features"
             (blur)="saveText('features', c.features, $event)"
@@ -167,27 +186,8 @@
         </div>
       </section>
 
-      <!-- Gear -->
+      <!-- Gear: gold, then weapons and armor, then inventory -->
       <section class="flex flex-col gap-4" [class]="hiddenUnless('gear')">
-        <div class="card flex flex-col gap-2">
-          <p class="label">Armas</p>
-          <p><span class="text-muted">Primária:</span> {{ c.primaryWeapon || '—' }}</p>
-          <p><span class="text-muted">Secundária:</span> {{ c.secondaryWeapon || '—' }}</p>
-          <p class="label mt-2">Armadura</p>
-          <p>
-            {{ c.armor.name || '—' }} <span class="text-muted">(valor {{ c.armor.score }})</span>
-          </p>
-        </div>
-        <div class="card">
-          <label class="label" for="items">Inventário</label>
-          <textarea
-            id="items"
-            class="field mt-2 min-h-28"
-            placeholder="Um item por linha"
-            [value]="c.items"
-            (blur)="saveText('items', c.items, $event)"
-          ></textarea>
-        </div>
         <div class="card">
           <p class="label">Ouro</p>
           <div class="mt-2 grid grid-cols-3 gap-2 text-center">
@@ -218,31 +218,67 @@
             }
           </div>
         </div>
+        <div class="card flex flex-col gap-2">
+          <p class="label">Armas</p>
+          <p><span class="text-muted">Primária:</span> {{ c.primaryWeapon || '—' }}</p>
+          <p><span class="text-muted">Secundária:</span> {{ c.secondaryWeapon || '—' }}</p>
+          <p class="label mt-2">Armadura</p>
+          <p>
+            {{ c.armor.name || '—' }} <span class="text-muted">(valor {{ c.armor.score }})</span>
+          </p>
+        </div>
+        <div class="card">
+          <label class="label" for="items">Inventário</label>
+          <textarea
+            id="items"
+            class="field mt-2 min-h-72 text-[15px] leading-relaxed field-sizing-content"
+            placeholder="Um item por linha"
+            [value]="c.items"
+            (blur)="saveText('items', c.items, $event)"
+          ></textarea>
+        </div>
       </section>
 
       <!-- Cards -->
-      <section
-        class="flex flex-col gap-4 lg:col-span-2 lg:grid lg:grid-cols-2"
-        [class]="hiddenUnless('cards')"
-      >
-        <div class="card">
-          <label class="label" for="loadout">Mão (até 5 cartas ativas)</label>
-          <textarea
-            id="loadout"
-            class="field mt-2 min-h-32"
-            placeholder="Uma carta por linha"
-            [value]="c.domainCards.loadout"
-            (blur)="saveCards(c, 'loadout', $event)"
-          ></textarea>
+      <section class="flex flex-col gap-4 lg:col-span-3" [class]="hiddenUnless('cards')">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="label">
+            Cartas de domínio ·
+            <span class="text-hope">{{ activeCount() }}/{{ maxActive }} ativas</span>
+          </p>
+          @if (cardError()) {
+            <p class="text-sm text-hp" role="alert">{{ cardError() }}</p>
+          }
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          @for (owned of ownedCards(); track owned.card.id) {
+            <app-domain-card-block
+              [card]="owned.card"
+              [active]="owned.active"
+              (activeToggle)="toggleCard(c, owned.card.id)"
+              (remove)="removeCard(c, owned.card.id)"
+            />
+          } @empty {
+            <p class="card text-sm text-muted">Nenhuma carta ainda. Adicione abaixo.</p>
+          }
+        </div>
+        <div class="card flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label class="label shrink-0" for="add-card">Adicionar carta</label>
+          <select id="add-card" class="field" (change)="addCard(c, $event)">
+            <option value="">Escolha uma carta de nível 1…</option>
+            @for (card of addableCards(); track card.id) {
+              <option [value]="card.id">{{ card.name }} — {{ domains[card.domain].name }}</option>
+            }
+          </select>
         </div>
         <div class="card">
-          <label class="label" for="vault">Cofre</label>
+          <label class="label" for="loadout">Outras cartas e anotações</label>
           <textarea
-            id="vault"
-            class="field mt-2 min-h-32"
-            placeholder="Cartas guardadas"
-            [value]="c.domainCards.vault"
-            (blur)="saveCards(c, 'vault', $event)"
+            id="loadout"
+            class="field mt-2 min-h-32 field-sizing-content"
+            placeholder="Cartas de nível mais alto ou combinados com o mestre"
+            [value]="c.domainCards.loadout"
+            (blur)="saveCards(c, 'loadout', $event)"
           ></textarea>
         </div>
       </section>
@@ -256,7 +292,7 @@
           <label class="label" for="notes">Anotações</label>
           <textarea
             id="notes"
-            class="field mt-2 min-h-48"
+            class="field mt-2 min-h-48 field-sizing-content"
             placeholder="Pistas, nomes, planos…"
             [value]="c.notes"
             (blur)="saveText('notes', c.notes, $event)"
@@ -267,7 +303,7 @@
             <label class="label" [for]="f.id">{{ f.label }}</label>
             <textarea
               [id]="f.id"
-              class="field -mt-2 min-h-28"
+              class="field -mt-2 min-h-28 field-sizing-content"
               [placeholder]="f.placeholder"
               [value]="c[f.id] ?? ''"
               (blur)="saveText(f.id, c[f.id] ?? '', $event)"
