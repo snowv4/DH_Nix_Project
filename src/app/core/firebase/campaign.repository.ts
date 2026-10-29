@@ -1,5 +1,5 @@
 import { DestroyRef, inject, Injectable, Signal } from '@angular/core';
-import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, runTransaction, setDoc } from 'firebase/firestore';
 import { Campaign } from '../models/campaign';
 import { clamp } from '../rules/character';
 import { FirebaseService } from './firebase.service';
@@ -21,6 +21,11 @@ export class CampaignRepository {
       { name: 'Mesa Nix', fear: 0 },
       destroyRef,
     );
+  }
+
+  /** GM releases a level for the whole table (1–10). */
+  async setLevelUnlocked(level: number): Promise<void> {
+    await setDoc(this.campaignRef, { levelUnlocked: clamp(level, 1, 10) }, { merge: true });
   }
 
   /** Clamped 0–12 inside a transaction so two quick taps can't race each other. */

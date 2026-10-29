@@ -1,0 +1,377 @@
+@let c = character();
+<div class="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
+  <header class="sticky top-0 z-20 border-b border-line bg-ink/95 px-3 pt-3 pb-2 backdrop-blur">
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="btn size-11 shrink-0 p-0 text-muted"
+        aria-label="Voltar para a ficha"
+        (click)="back()"
+      >
+        ✕
+      </button>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs text-muted">
+          @if (c) {
+            {{ c.name }} · nível {{ c.level }} → <span class="text-hope">{{ newLevel() }}</span> ·
+            Patamar {{ tier() }}
+          }
+        </p>
+        <h1 class="truncate font-display text-xl font-bold">{{ stepLabel() }}</h1>
+      </div>
+    </div>
+    <div class="mt-2 flex gap-1" aria-hidden="true">
+      @for (s of steps(); track s; let i = $index) {
+        <div
+          class="h-1.5 flex-1 rounded-full"
+          [class]="i <= stepIndex() ? 'bg-hope' : 'bg-panel'"
+        ></div>
+      }
+    </div>
+  </header>
+
+  <main class="flex-1 px-3 pt-4 pb-36">
+    @if (!c) {
+      <p class="text-center text-muted">Carregando ficha…</p>
+    } @else {
+      @switch (step()) {
+        @case ('achievement') {
+          <p class="text-muted">
+            Ao chegar no nível {{ newLevel() }} você conquista um novo patamar: ganha
+            <strong class="text-white">uma Experiência nova (+2)</strong> e
+            <strong class="text-white">+1 de Proficiência</strong> (rola um dado de dano a mais).
+            @if (newLevel() >= 5) {
+              As marcas dos atributos também são limpas.
+            }
+          </p>
+          <div class="card mt-4 flex flex-col gap-2">
+            <label class="label" for="new-exp">Nova Experiência · +2</label>
+            <input
+              id="new-exp"
+              class="field"
+              [value]="choices().newExperience.name"
+              (input)="
+                patch({
+                  newExperience: { name: value($event), note: choices().newExperience.note },
+                })
+              "
+              placeholder="Ex.: Sobrevivente das Ruínas"
+            />
+            <input
+              class="field text-sm"
+              aria-label="Quando usar a nova Experiência"
+              [value]="choices().newExperience.note"
+              (input)="
+                patch({
+                  newExperience: { name: choices().newExperience.name, note: value($event) },
+                })
+              "
+              placeholder="Quando usar? (anotação, opcional)"
+            />
+          </div>
+        }
+
+        @case ('advancements') {
+          <p class="text-muted">
+            Escolha <strong class="text-white">{{ totalPoints }} avanços</strong> do Patamar
+            {{ tier() }}. Opções com vários espaços podem ser escolhidas mais de uma vez. Espaços
+            cinza já foram usados em níveis anteriores deste patamar.
+          </p>
+          <p class="mt-2 rounded-lg bg-panel-2 px-3 py-2 text-sm" aria-live="polite">
+            Escolhidos: <strong class="text-hope">{{ spent() }}/{{ totalPoints }}</strong>
+          </p>
+          <div class="mt-4 flex flex-col gap-3">
+            @for (a of options(); track a.option.id) {
+              @let taking = this.taking(a.option.id);
+              <article class="card flex flex-col gap-2" [class.!border-hope]="taking > 0">
+                <div class="flex items-start gap-3">
+                  <div class="flex shrink-0 gap-1 pt-1" aria-hidden="true">
+                    @for (slot of slots(a.total, a.used, taking); track $index) {
+                      <span
+                        class="block size-5 rounded border-2"
+                        [class]="
+                          slot === 'used'
+                            ? 'border-muted bg-muted/60'
+                            : slot === 'taking'
+                              ? 'border-hope bg-hope'
+                              : 'border-line'
+                        "
+                      ></span>
+                    }
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <h3 class="font-semibold">
+                      {{ a.option.label }}
+                      @if (a.option.cost === 2) {
+                        <span class="text-xs text-fear">(gasta os 2 avanços)</span>
+                      }
+                    </h3>
+                    <p class="text-xs text-muted">{{ a.option.hint }}</p>
+                  </div>
+                  <div class="flex shrink-0 gap-1">
+                    @if (taking > 0) {
+                      <button
+                        type="button"
+                        class="btn-ghost size-11 p-0 text-lg"
+                        [attr.aria-label]="'Tirar ' + a.option.label"
+                        (click)="removeOne(a.option.id)"
+                      >
+                        −
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="btn-hope size-11 p-0 text-lg"
+                      [attr.aria-label]="'Escolher ' + a.option.label"
+                      [disabled]="!canAdd(a.option.id, a.total, a.used, a.option.cost)"
+                      (click)="add(a.option.id)"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Sub-choices for each pick of this option -->
+                @for (pick of choices().advancements; track $index; let pi = $index) {
+                  @if (pick.id === a.option.id) {
+                    @switch (pick.id) {
+                      @case ('traits') {
+                        <div class="rounded-lg bg-panel-2 p-2">
+                          <p class="mb-1 text-xs text-muted">Escolha 2 atributos não marcados:</p>
+                          <div class="grid grid-cols-3 gap-1">
+                            @for (t of freeTraits(); track t) {
+                              @let on = pick.traits.includes(t);
+                              <button
+                                type="button"
+                                class="btn min-h-10 border border-line px-1 text-xs"
+                                [class.!border-hope]="on"
+                                [class.text-hope]="on"
+                                [attr.aria-pressed]="on"
+                                (click)="toggleTrait(pi, t)"
+                              >
+                                {{ traitLabels[t] }} {{ c.traits[t] >= 0 ? '+' : ''
+                                }}{{ c.traits[t] }}
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                      @case ('experiences') {
+                        <div class="rounded-lg bg-panel-2 p-2">
+                          <p class="mb-1 text-xs text-muted">
+                            Escolha 2 Experiências para ganhar +1:
+                          </p>
+                          <div class="flex flex-wrap gap-1">
+                            @for (name of experienceNames(); track $index; let ei = $index) {
+                              @let on = pick.indexes.includes(ei);
+                              <button
+                                type="button"
+                                class="btn min-h-10 border border-line px-3 text-xs"
+                                [class.!border-hope]="on"
+                                [class.text-hope]="on"
+                                [attr.aria-pressed]="on"
+                                (click)="toggleExperience(pi, ei)"
+                              >
+                                {{ name }}
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                      @case ('domainCard') {
+                        <label
+                          class="flex flex-col gap-1 rounded-lg bg-panel-2 p-2 text-xs text-muted"
+                        >
+                          Carta extra (nível {{ newLevel() }} ou menor):
+                          <select class="field text-sm" (change)="setExtraCard(pi, $event)">
+                            <option value="" [selected]="!pick.cardId">Escolha…</option>
+                            @for (card of extraCardOptions(pi); track card.id) {
+                              <option [value]="card.id" [selected]="pick.cardId === card.id">
+                                {{ card.name }} — {{ domains[card.domain].name }}, nível
+                                {{ card.level }}
+                              </option>
+                            }
+                          </select>
+                        </label>
+                      }
+                    }
+                  }
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @case ('class') {
+          @if (isStanceUser()) {
+            <p class="text-muted">
+              Artista Marcial: a cada nível você aprende uma postura nova do seu patamar ou abaixo.
+            </p>
+            <div class="mt-3 flex flex-col gap-2">
+              @for (s of stances(); track s.id) {
+                @let on = choices().stanceId === s.id;
+                <button
+                  type="button"
+                  class="card text-left text-sm"
+                  [class.!border-hope]="on"
+                  [attr.aria-pressed]="on"
+                  (click)="patch({ stanceId: s.id })"
+                >
+                  <strong>{{ s.name }}</strong>
+                  <span class="text-muted">&ngsp;({{ s.nameEn }})</span><br />{{ s.text }}
+                </button>
+              }
+            </div>
+          }
+          @if (isCompanionUser()) {
+            <p class="mt-4 text-muted">
+              Vínculo Bestial: escolha uma melhoria para o seu companheiro.
+            </p>
+            <div class="mt-3 flex flex-col gap-2">
+              @for (u of companionUpgrades; track u.id) {
+                @let on = choices().companionUpgradeId === u.id;
+                <button
+                  type="button"
+                  class="card text-left text-sm"
+                  [class.!border-hope]="on"
+                  [attr.aria-pressed]="on"
+                  (click)="patch({ companionUpgradeId: u.id })"
+                >
+                  <strong>{{ u.name }}</strong
+                  ><br />{{ u.text }}
+                </button>
+              }
+            </div>
+          }
+        }
+
+        @case ('card') {
+          <div class="card !border-fear/50 text-sm">
+            <p class="label text-fear">Limiares de dano</p>
+            <p class="mt-1">
+              Todo nível novo soma <strong>+1 em todos os limiares</strong>:
+              {{ c.thresholds.major }}/{{ c.thresholds.severe }} →
+              <strong class="text-hope"
+                >{{ c.thresholds.major + 1 }}/{{ c.thresholds.severe + 1 }}</strong
+              >
+            </p>
+          </div>
+          <p class="mt-4 text-muted">
+            Escolha <strong class="text-white">uma carta nova</strong> do nível {{ newLevel() }} ou
+            menor, dos domínios da sua classe. Se a mão já tiver 5 cartas ativas, ela entra no
+            cofre.
+          </p>
+          <div class="mt-3 flex flex-col gap-2">
+            @for (card of newCardOptions(); track card.id) {
+              @let on = choices().newCardId === card.id;
+              <button
+                type="button"
+                class="card flex flex-col gap-1 text-left"
+                [class.!border-hope]="on"
+                [attr.aria-pressed]="on"
+                (click)="patch({ newCardId: card.id })"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <strong class="font-display text-lg">{{ card.name }}</strong>
+                  <span class="shrink-0 text-xs text-muted"
+                    >{{ domains[card.domain].name }} · nível {{ card.level }}</span
+                  >
+                </div>
+                <span
+                  class="self-start rounded-md bg-hope/15 px-2 py-0.5 text-xs font-semibold text-hope"
+                  >{{ card.cost }}</span
+                >
+                <app-rich-text [text]="card.text" />
+                <span class="text-xs text-fear">⚡ Custo de troca: {{ card.recallCost }}</span>
+              </button>
+            } @empty {
+              <p class="card text-sm text-muted">
+                Nenhuma carta disponível — você já tem todas até este nível.
+              </p>
+            }
+          </div>
+        }
+
+        @case ('review') {
+          @if (preview(); as p) {
+            <div class="card">
+              <p class="label">Resumo do nível {{ newLevel() }}</p>
+              <ul class="mt-2 flex flex-col gap-1.5 text-sm">
+                @for (line of p.levelHistory?.at(-1)?.summary ?? []; track $index) {
+                  <li class="flex gap-2">
+                    <span class="text-hope" aria-hidden="true">◆</span>{{ line }}
+                  </li>
+                }
+              </ul>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+              <div class="card px-2">
+                <p class="text-xs text-muted">PV</p>
+                <p class="font-display text-2xl text-hp">{{ p.hp?.max }}</p>
+              </div>
+              <div class="card px-2">
+                <p class="text-xs text-muted">Estresse</p>
+                <p class="font-display text-2xl text-stress">{{ p.stress?.max }}</p>
+              </div>
+              <div class="card px-2">
+                <p class="text-xs text-muted">Evasão</p>
+                <p class="font-display text-2xl">{{ p.evasion }}</p>
+              </div>
+              <div class="card px-2">
+                <p class="text-xs text-muted">Proficiência</p>
+                <p class="font-display text-2xl">{{ p.proficiency }}</p>
+              </div>
+              <div class="card col-span-2 px-2">
+                <p class="text-xs text-muted">Limiares</p>
+                <p class="font-display text-2xl">
+                  {{ p.thresholds?.major }}/{{ p.thresholds?.severe }}
+                </p>
+              </div>
+            </div>
+            <p class="mt-3 text-xs text-muted">
+              Dá para desfazer depois pela ficha (“Desfazer nível {{ newLevel() }}”).
+            </p>
+          } @else {
+            <p class="rounded-lg bg-hp/15 px-3 py-2 text-sm text-hp" role="alert">
+              {{ stepError() }}
+            </p>
+          }
+        }
+      }
+      <div class="mt-8"><app-license-notice /></div>
+    }
+  </main>
+
+  <footer class="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ink/95 backdrop-blur">
+    <div class="mx-auto flex max-w-2xl flex-col gap-2 px-3 py-3">
+      @if (stepError() && step() !== 'review') {
+        <p class="text-center text-sm text-muted" aria-live="polite">{{ stepError() }}</p>
+      }
+      @if (saveError()) {
+        <p class="text-center text-sm text-hp" role="alert">{{ saveError() }}</p>
+      }
+      <div class="flex gap-2">
+        <button type="button" class="btn-ghost flex-1" (click)="back()">Voltar</button>
+        @if (step() === 'review') {
+          <button
+            type="button"
+            class="btn-hope flex-[2]"
+            [disabled]="!preview() || saving()"
+            (click)="apply()"
+          >
+            {{ saving() ? 'Salvando…' : 'Subir para o nível ' + newLevel() }}
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn-hope flex-[2]"
+            [disabled]="!!stepError()"
+            (click)="next()"
+          >
+            Próximo
+          </button>
+        }
+      </div>
+    </div>
+  </footer>
+</div>

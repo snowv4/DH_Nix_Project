@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { MAX_SUPPORTED_LEVEL } from '../../core/rules/leveling';
 import { Dialog } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
 import { SessionService } from '../../core/auth/session.service';
@@ -43,6 +51,13 @@ export class GmPanel {
     } catch {
       // ignore
     }
+  }
+
+  protected readonly maxSupportedLevel = MAX_SUPPORTED_LEVEL;
+  protected readonly levelUnlocked = computed(() => this.campaign().levelUnlocked ?? 1);
+
+  protected releaseLevel(level: number): void {
+    void this.campaignRepo.setLevelUnlocked(level);
   }
 
   protected fear(delta: number): void {

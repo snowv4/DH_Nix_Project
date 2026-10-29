@@ -275,6 +275,7 @@ users/{uid}
 campaigns/{campaignId}
   name, gmUid, memberUids: string[], inviteCode, createdAt
   fear: number (0–12)
+  levelUnlocked: number              // o mestre libera o nível da mesa
   settings: { showFearOnTv: bool, ... }
 
 campaigns/{campaignId}/characters/{characterId}
@@ -292,7 +293,8 @@ campaigns/{campaignId}/characters/{characterId}
   domainCards: { loadout, vault }     // texto livre p/ cartas fora dos dados
   inventory: { primaryWeapon, secondaryWeapon, items: [...], gold: { handfuls, bags, chests } }
   backstory: { answers: {...}, appearance, ... }, connections: {...}
-  levelHistory: [{ level, choices: [...] }]
+  levelHistory: [{ level, advancements: [ids], summary: [texto], before: {campos antes}, appliedAt }]  // desfazer = restaurar `before`
+  markedTraits: [traitId], stances: [id], comboDie
   notes: string
   updatedAt
 
@@ -403,7 +405,8 @@ Reorganizadas em 28/10/2026 para refletir o que já existe.
 - `core/rules/creation.ts` com testes; regras do Firestore testadas no emulador (`npm run test:rules`).
 - **Pronto quando:** alguém que nunca jogou cria um personagem válido sozinho pelo celular. *(validar com os jogadores)*
 
-### Fase 3 — Sessão e evolução (próxima)
+### Fase 3 — Sessão e evolução (em andamento)
+- ✅ Subir de nível (assistente) até o nível 4: conquista de patamar, avanços do Patamar 2, +1 limiares, carta nova, desfazer; o mestre libera o nível no painel. Cartas de nível 2–4 traduzidas.
 - Receber dano (limiares + Armadura), descansos curto/longo, Mão/Cofre com as cartas do SRD.
 - Subir de nível (assistente) — exige transcrever cartas de nível 2+ e opções de avanço.
 - Adversários e contadores no painel do mestre. Anotações por sessão.

@@ -54,6 +54,19 @@
       </div>
     </header>
 
+    @if (canLevel()) {
+      <a class="btn-hope levelup-glow w-full text-base" [routerLink]="['/ficha', c.id, 'nivel']">
+        ⬆ Subir para o nível {{ c.level + 1 }}
+      </a>
+    }
+    @if (lastLevel(); as last) {
+      <div class="-mt-2 text-right">
+        <button type="button" class="btn min-h-9 px-2 text-xs text-muted" (click)="undoLevel(c)">
+          Desfazer nível {{ last }}
+        </button>
+      </div>
+    }
+
     <!-- Tabs (phones/tablets only) -->
     <nav
       class="sticky top-0 z-10 -mx-3 flex gap-1 overflow-x-auto bg-ink/95 px-3 py-1 backdrop-blur lg:hidden"

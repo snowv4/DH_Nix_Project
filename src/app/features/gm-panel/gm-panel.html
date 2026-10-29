@@ -52,6 +52,47 @@
   </section>
 
   <div>
+    <section
+      class="card mb-4 flex flex-wrap items-center gap-3 border-hope/40"
+      aria-label="Nível da mesa"
+    >
+      <div class="min-w-0 flex-1">
+        <h2 class="label text-hope">Nível liberado</h2>
+        <p class="text-sm text-muted">
+          Quem estiver abaixo do nível {{ levelUnlocked() }} vê o botão “Subir de nível” na ficha.
+          @if (levelUnlocked() >= maxSupportedLevel) {
+            <span class="block text-xs"
+              >Por enquanto o site vai até o nível {{ maxSupportedLevel }} (cartas do Patamar
+              2).</span
+            >
+          }
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="btn-ghost size-11 p-0 text-xl"
+          aria-label="Diminuir nível liberado"
+          [disabled]="levelUnlocked() <= 1"
+          (click)="releaseLevel(levelUnlocked() - 1)"
+        >
+          −
+        </button>
+        <span class="w-10 text-center font-display text-3xl text-hope tabular-nums">{{
+          levelUnlocked()
+        }}</span>
+        <button
+          type="button"
+          class="btn-hope size-11 p-0 text-xl"
+          aria-label="Liberar o próximo nível"
+          [disabled]="levelUnlocked() >= maxSupportedLevel"
+          (click)="releaseLevel(levelUnlocked() + 1)"
+        >
+          +
+        </button>
+      </div>
+    </section>
+
     <section aria-label="Personagens">
       <div class="mb-3 flex items-center justify-between gap-2">
         <h2 class="label">Mesa ({{ characters().length }})</h2>

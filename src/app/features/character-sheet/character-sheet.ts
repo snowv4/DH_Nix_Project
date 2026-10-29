@@ -11,6 +11,9 @@ import {
   Signal,
 } from '@angular/core';
 import { Dialog } from '@angular/cdk/dialog';
+import { RouterLink } from '@angular/router';
+import { CampaignRepository } from '../../core/firebase/campaign.repository';
+import { canLevelUp, undoLastLevel } from '../../core/rules/leveling';
 import { DOMAIN_CARDS, DOMAINS, DomainCard, findCard, findClass } from '../../core/data/srd';
 import { TRAIT_COLORS, TRAIT_LABELS } from '../../core/data/traits';
 import { CardArtRepository } from '../../core/firebase/card-art.repository';
@@ -38,7 +41,7 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
 
 @Component({
   selector: 'app-character-sheet',
-  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock, RichText],
+  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock, RichText, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',
 })
@@ -55,6 +58,26 @@ export class CharacterSheet implements OnInit {
   /** Shared art for every card, uploaded by anyone at the table. */
   protected readonly cardArt = this.cardArtRepo.watchAll(this.destroyRef);
   protected readonly editingFeatures = signal(false);
+  private readonly campaign = inject(CampaignRepository).watchCampaign(this.destroyRef);
+
+  /** The GM released a higher level than this character has. */
+  protected readonly canLevel = computed(() => {
+    const c = this.character?.();
+    return !!c && canLevelUp(c, this.campaign().levelUnlocked ?? 1);
+  });
+  protected readonly lastLevel = computed(
+    () => this.character?.()?.levelHistory?.at(-1)?.level ?? 0,
+  );
+
+  protected undoLevel(c: Character): void {
+    const patch = undoLastLevel(c);
+    if (
+      !patch ||
+      !window.confirm(`Desfazer o nível ${c.level}? As escolhas desse nível serão apagadas.`)
+    )
+      return;
+    this.save(patch);
+  }
 
   /** Features text → blocks separated by blank lines; "Category — Title" first lines become headings. */
   protected readonly featureBlocks = computed(() =>

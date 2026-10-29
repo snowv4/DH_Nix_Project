@@ -1,9 +1,10 @@
+import { TIER2_CARDS } from './domain-cards-tier2';
 import { DomainCard } from './types';
 
 // Source: Daggerheart SRD 2.0, "Domain Card Reference" (pp. 206–224). Level 1 cards only, translated.
 // TODO: add higher-level cards when the level-up wizard is built.
 
-export const DOMAIN_CARDS: readonly DomainCard[] = [
+const LEVEL1_CARDS: readonly DomainCard[] = [
   // Arcana
   {
     id: 'rune-ward',
@@ -345,6 +346,9 @@ export const DOMAIN_CARDS: readonly DomainCard[] = [
     text: 'Quando um aliado a até Muito Perto for receber dano, você pode marcar 1 Estresse para se colocar na frente e virar o alvo do ataque. Ao receber o dano desse ataque, você pode marcar quantos Espaços de Armadura quiser.',
   },
 ];
+
+/** All transcribed cards (levels 1–4 so far). */
+export const DOMAIN_CARDS: readonly DomainCard[] = [...LEVEL1_CARDS, ...TIER2_CARDS];
 
 export const CARD_TYPE_LABELS = {
   spell: 'Magia',

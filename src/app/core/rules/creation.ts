@@ -503,6 +503,8 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
     gold: { handfuls: 1, bags: 0, chests: 0 },
     domainCards: { loadout: '', vault: '' },
     cards: d.domainCardIds.filter((id) => !!findCard(id)).map((id) => ({ id, active: true })),
+    stances: d.subclassId === 'martial-artist' ? [...d.classChoices.stances] : [],
+    ...(d.classId === 'brawler' ? { comboDie: 'd4' } : {}),
     features: features.join('\n\n'),
     appearance: d.appearance.trim(),
     background: questionsAndAnswers(cls?.backgroundQuestions ?? [], d.backgroundAnswers),

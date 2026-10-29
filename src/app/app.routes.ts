@@ -9,6 +9,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/character-sheet/sheet-page').then((m) => m.SheetPage),
   },
   {
+    path: 'ficha/:id/nivel',
+    canActivate: [sheetGuard],
+    loadComponent: () => import('./features/level-up/level-up-page').then((m) => m.LevelUpPage),
+  },
+  {
     path: 'criar/:id',
     canActivate: [creationGuard],
     loadComponent: () =>

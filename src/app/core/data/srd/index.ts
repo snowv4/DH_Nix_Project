@@ -6,3 +6,4 @@ export * from './communities';
 export * from './domain-cards';
 export * from './equipment';
 export * from './experiences';
+export * from './advancements';

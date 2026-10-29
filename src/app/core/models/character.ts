@@ -60,12 +60,29 @@ export interface Character {
   /** Free-text card notes (kept for manual sheets and cards not in the SRD data yet). */
   domainCards: { loadout: string; vault: string };
   cards?: OwnedCard[];
+  /** Traits raised by the "two unmarked traits" advancement; cleared at levels 5 and 8. */
+  markedTraits?: TraitId[];
+  /** Martial Artist stances known (ids from TIER1/TIER2 stance lists). */
+  stances?: string[];
+  /** Brawler Combo Die (d4 at level 1). */
+  comboDie?: string;
+  levelHistory?: LevelRecord[];
   features: string;
   appearance: string;
   background: string;
   connections: string;
   notes: string;
   updatedAt: number;
+}
+
+/** One applied level-up: what was chosen and the fields as they were before, for undo. */
+export interface LevelRecord {
+  level: number;
+  /** Advancement ids taken (Proficiency/Multiclass appear once but cost two). */
+  advancements: string[];
+  summary: string[];
+  before: Partial<Omit<Character, 'id' | 'levelHistory'>>;
+  appliedAt: number;
 }
 
 /** Fields the sheet may change through a partial update. */
