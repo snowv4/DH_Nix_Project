@@ -221,7 +221,7 @@ export class MapCanvas {
       opacity: t.hidden ? 0.5 : 1,
       name: 'token',
     });
-    const portrait = t.kind === 'pc' ? this.portraits()[t.refId] : '';
+    const portrait = t.refId ? this.portraits()[t.refId] : '';
     const pic = portrait ? this.portraitImage(portrait) : undefined;
     if (pic) {
       const clip = new Konva.Group({ clipFunc: (ctx) => ctx.arc(0, 0, r, 0, Math.PI * 2, false) });

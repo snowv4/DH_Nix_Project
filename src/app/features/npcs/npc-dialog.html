@@ -1,0 +1,227 @@
+<form
+  class="flex max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-2xl border border-line bg-panel text-white shadow-2xl"
+  [formGroup]="form"
+  (ngSubmit)="save()"
+>
+  <div class="flex items-center justify-between border-b border-line p-4">
+    <h2 class="font-display text-xl">{{ isNew ? 'Novo NPC' : 'Editar NPC' }}</h2>
+    <button
+      type="button"
+      class="btn size-11 p-0 text-muted"
+      aria-label="Fechar"
+      (click)="ref.close()"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="flex flex-col gap-5 overflow-y-auto p-4">
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <div class="mx-auto w-32 shrink-0 sm:mx-0 sm:w-28">
+        <app-portrait-frame
+          [src]="portrait()"
+          [name]="form.controls.name.value || '?'"
+          [editable]="true"
+          (picked)="pickPortrait($event)"
+        />
+      </div>
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <label class="label" for="npc-name">Nome</label>
+        <div class="flex gap-2">
+          <input id="npc-name" class="field min-w-0 flex-1" formControlName="name" />
+          <button
+            type="button"
+            class="btn-hope shrink-0 px-3"
+            (click)="rollName()"
+            aria-label="Gerar nome aleatório"
+          >
+            🎲 Nome
+          </button>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-muted">
+          Estilo do nome:
+          <select class="field min-h-9 flex-1 py-1 text-sm" (change)="setStyle($event)">
+            @for (s of nameStyles; track s.id) {
+              <option [value]="s.id">{{ s.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-muted">
+          Etiquetas (opcional)
+          <input
+            class="field"
+            formControlName="tags"
+            placeholder="Ex.: aliado, vila Mellâmbar, chefe"
+          />
+        </label>
+      </div>
+    </div>
+
+    <fieldset class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <legend class="label mb-2">Combate</legend>
+      <label class="col-span-2 flex flex-col gap-1">
+        <span class="text-sm text-muted">Tipo</span>
+        <select class="field" formControlName="type">
+          <option value="">NPC (sem combate)</option>
+          @for (t of types; track t.id) {
+            <option [value]="t.id">{{ t.name }} ({{ t.nameEn }}) — {{ t.hint }}</option>
+          }
+        </select>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Patamar</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="tier"
+          (change)="applyTierBenchmarks()"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Dificuldade</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="difficulty"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Limiar Maior</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="major"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Limiar Grave</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="severe"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">PV</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="hpMax"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Estresse</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="stressMax"
+        />
+      </label>
+      <p class="col-span-2 text-xs text-muted sm:col-span-4">
+        Mudar o patamar preenche as médias do SRD (dificuldade, limiares e modificador de ataque).
+        PV e Estresse você define.
+      </p>
+    </fieldset>
+
+    <fieldset class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <legend class="label mb-2">Ataque padrão</legend>
+      <label class="col-span-2 flex flex-col gap-1">
+        <span class="text-sm text-muted">Nome</span>
+        <input class="field" formControlName="attackName" placeholder="Ex.: Garras" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Modificador</span>
+        <input
+          class="field text-center"
+          type="number"
+          inputmode="numeric"
+          formControlName="attackModifier"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Alcance</span>
+        <select class="field" formControlName="attackRange">
+          @for (r of ranges; track r[0]) {
+            <option [value]="r[0]">{{ r[1] }}</option>
+          }
+        </select>
+      </label>
+      <label class="col-span-2 flex flex-col gap-1 sm:col-span-4">
+        <span class="text-sm text-muted">Dano</span>
+        <input
+          class="field"
+          formControlName="attackDamage"
+          [placeholder]="'Ex.: 1d8+2 físico (média do patamar: ' + benchmarkDamage() + ')'"
+        />
+      </label>
+    </fieldset>
+
+    <fieldset class="flex flex-col gap-3">
+      <legend class="label mb-2">Detalhes</legend>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Descrição</span>
+        <textarea
+          class="field min-h-20 field-sizing-content"
+          formControlName="description"
+          placeholder="Aparência e jeito"
+        ></textarea>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Motivações e táticas</span>
+        <input
+          class="field"
+          formControlName="motives"
+          placeholder="Ex.: emboscar, proteger o chefe, fugir"
+        />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Experiências</span>
+        <textarea
+          class="field min-h-16 field-sizing-content"
+          formControlName="experiences"
+          placeholder="Uma por linha. Ex.: Emboscador +3"
+        ></textarea>
+      </label>
+      <div class="-mt-1 flex flex-wrap gap-1">
+        @for (e of exampleExperiences; track e) {
+          <button
+            type="button"
+            class="min-h-8 rounded-full border border-line px-2.5 text-xs text-muted hover:border-hope"
+            (click)="addExperience(e)"
+          >
+            + {{ e }}
+          </button>
+        }
+      </div>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Características</span>
+        <textarea
+          class="field min-h-28 field-sizing-content"
+          formControlName="features"
+          placeholder="Uma por linha, no formato “Nome: efeito”. Ex.: Pancada Brutal: gaste 1 Medo para…"
+        ></textarea>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm text-muted">Anotações do mestre</span>
+        <textarea
+          class="field min-h-20 field-sizing-content"
+          formControlName="notes"
+          placeholder="Segredos, o que sabe, onde encontrar…"
+        ></textarea>
+      </label>
+    </fieldset>
+  </div>
+
+  <div class="flex gap-2 border-t border-line p-4">
+    <button type="button" class="btn-ghost flex-1" (click)="ref.close()">Cancelar</button>
+    <button type="submit" class="btn-hope flex-1" [disabled]="saving() || form.invalid">
+      Salvar
+    </button>
+  </div>
+</form>

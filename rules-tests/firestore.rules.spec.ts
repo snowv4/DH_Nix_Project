@@ -33,6 +33,7 @@ describe('firestore.rules', () => {
     'campaigns/nix/cardArt/book-of-ava',
     'campaigns/nix/map/state',
     'campaigns/nix/mapImages/abc',
+    'campaigns/nix/npcs/goblin',
   ];
 
   for (const path of paths) {

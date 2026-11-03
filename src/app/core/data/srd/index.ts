@@ -7,3 +7,4 @@ export * from './domain-cards';
 export * from './equipment';
 export * from './experiences';
 export * from './advancements';
+export * from './adversaries';

@@ -9,7 +9,25 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ANCESTRIES, CLASSES, COMMUNITIES, findClass } from '../../core/data/srd';
+import {
+  ANCESTRIES,
+  ARMORS,
+  CLASSES,
+  COMMUNITIES,
+  findArmor,
+  findClass,
+  findWeapon,
+  PRIMARY_WEAPONS,
+  SECONDARY_WEAPONS,
+  Weapon,
+} from '../../core/data/srd';
+import { describeWeapon } from '../../core/rules/creation';
+import {
+  armorDisplayName,
+  parseArmorName,
+  parseWeaponText,
+  swapArmor,
+} from '../../core/rules/gear';
 import { TRAIT_LABELS } from '../../core/data/traits';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { Character, TRAIT_IDS } from '../../core/models/character';
@@ -31,6 +49,28 @@ export class EditSheetDialog {
   protected readonly traitIds = TRAIT_IDS;
   protected readonly traitLabels = TRAIT_LABELS;
   protected readonly saving = signal(false);
+
+  // ---------- Equipment dropdowns (choice = weapon id, '' = none, 'custom' = free text) ----------
+  protected readonly primaryGroups = groupWeapons(PRIMARY_WEAPONS);
+  protected readonly secondaryWeapons = SECONDARY_WEAPONS;
+  protected readonly armors = ARMORS;
+  protected readonly weaponSlots: {
+    key: 'primary' | 'secondary';
+    label: string;
+    control: 'primaryWeapon' | 'secondaryWeapon';
+  }[] = [
+    { key: 'primary', label: 'Arma primária', control: 'primaryWeapon' },
+    { key: 'secondary', label: 'Arma secundária', control: 'secondaryWeapon' },
+  ];
+  protected readonly gear = {
+    primary: signal(initialWeapon(this.c.primaryWeapon)),
+    secondary: signal(initialWeapon(this.c.secondaryWeapon)),
+  };
+  protected readonly armorChoice = signal(initialArmor(this.c.armor.name));
+  /** Spellcast trait of the current subclass, for "Spellcast" weapons. */
+  private readonly cast = findClass(this.c.classId)?.subclasses.find(
+    (s) => s.name === this.c.subclass,
+  )?.spellcastTrait;
 
   private readonly num = (v: number, min = 0, max = 99) =>
     this.fb.control(v, [Validators.min(min), Validators.max(max)]);
@@ -65,6 +105,76 @@ export class EditSheetDialog {
       this.c.experiences.map((e) => this.experienceGroup(e.name, e.bonus, e.note ?? '')),
     ),
   });
+
+  protected pickWeapon(slot: 'primary' | 'secondary', e: Event): void {
+    const choice = (e.target as HTMLSelectElement).value;
+    this.gear[slot].update((g) => ({ ...g, choice }));
+    this.writeWeapon(slot);
+  }
+
+  protected setWeaponReskin(slot: 'primary' | 'secondary', e: Event): void {
+    const reskin = (e.target as HTMLInputElement).value;
+    this.gear[slot].update((g) => ({ ...g, reskin }));
+    this.writeWeapon(slot);
+  }
+
+  protected toggleWeaponReskin(slot: 'primary' | 'secondary'): void {
+    this.gear[slot].update((g) => ({
+      ...g,
+      reskinOpen: !g.reskinOpen,
+      reskin: g.reskinOpen ? '' : g.reskin,
+    }));
+    this.writeWeapon(slot);
+  }
+
+  /** The sheet keeps weapons as text; the dropdown just writes the right text into the form. */
+  private writeWeapon(slot: 'primary' | 'secondary'): void {
+    const g = this.gear[slot]();
+    const control =
+      slot === 'primary' ? this.form.controls.primaryWeapon : this.form.controls.secondaryWeapon;
+    if (g.choice === 'custom') return;
+    const w = findWeapon(g.choice);
+    control.setValue(w ? describeWeapon(w, this.cast, g.reskin) : '');
+  }
+
+  protected pickArmor(e: Event): void {
+    const choice = (e.target as HTMLSelectElement).value;
+    const prev = this.armorChoice();
+    this.armorChoice.set({ ...prev, choice });
+    if (choice === 'custom') return;
+    const v = this.form.getRawValue();
+    const next = swapArmor(
+      { score: v.armorScore, major: v.major, severe: v.severe },
+      findArmor(prev.choice) ?? null,
+      findArmor(choice) ?? null,
+      v.level,
+    );
+    const armor = findArmor(choice);
+    this.form.patchValue({
+      armorName: armor ? armorDisplayName(armor, prev.reskin) : '',
+      armorScore: next.score,
+      major: next.major,
+      severe: next.severe,
+    });
+  }
+
+  protected setArmorReskin(e: Event): void {
+    const reskin = (e.target as HTMLInputElement).value;
+    this.armorChoice.update((a) => ({ ...a, reskin }));
+    const armor = findArmor(this.armorChoice().choice);
+    if (armor) this.form.controls.armorName.setValue(armorDisplayName(armor, reskin));
+  }
+
+  protected toggleArmorReskin(): void {
+    this.armorChoice.update((a) => ({
+      ...a,
+      reskinOpen: !a.reskinOpen,
+      reskin: a.reskinOpen ? '' : a.reskin,
+    }));
+    const armor = findArmor(this.armorChoice().choice);
+    if (armor)
+      this.form.controls.armorName.setValue(armorDisplayName(armor, this.armorChoice().reskin));
+  }
 
   // toSignal: turns the control's valueChanges stream into a signal so `computed` can react to it.
   private readonly classId = toSignal(this.form.controls.classId.valueChanges, {
@@ -142,6 +252,40 @@ export class EditSheetDialog {
   private experienceGroup(name: string, bonus: number, note: string) {
     return this.fb.group({ name, bonus: this.num(bonus, -9, 9), note });
   }
+}
+
+interface GearChoice {
+  choice: string;
+  reskin: string;
+  reskinOpen: boolean;
+}
+
+function initialWeapon(text: string): GearChoice {
+  if (!text.trim()) return { choice: '', reskin: '', reskinOpen: false };
+  const parsed = parseWeaponText(text);
+  return parsed
+    ? { choice: parsed.weapon.id, reskin: parsed.reskin, reskinOpen: !!parsed.reskin }
+    : { choice: 'custom', reskin: '', reskinOpen: false };
+}
+
+function initialArmor(name: string): GearChoice {
+  if (!name.trim()) return { choice: '', reskin: '', reskinOpen: false };
+  const parsed = parseArmorName(name, ARMORS);
+  return parsed
+    ? { choice: parsed.armor.id, reskin: parsed.reskin, reskinOpen: !!parsed.reskin }
+    : { choice: 'custom', reskin: '', reskinOpen: false };
+}
+
+function groupWeapons(list: readonly Weapon[]): { label: string; weapons: Weapon[] }[] {
+  const wheel = (w: Weapon) => w.id.endsWith('wheelchair');
+  return [
+    { label: 'Armas físicas', weapons: list.filter((w) => w.damageType === 'phy' && !wheel(w)) },
+    {
+      label: 'Armas mágicas (exigem atributo de Conjuração)',
+      weapons: list.filter((w) => w.damageType !== 'phy' && !wheel(w)),
+    },
+    { label: 'Cadeiras de rodas de combate', weapons: list.filter(wheel) },
+  ];
 }
 
 function withCurrent(options: string[], current: string): string[] {

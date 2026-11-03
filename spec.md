@@ -318,6 +318,10 @@ campaigns/{campaignId}/drafts/{characterId}        // rascunho do guia de criaç
 campaigns/{campaignId}/cardArt/{cardId}            // arte enviada pela mesa p/ o cabeçalho da carta
   image (data URL ~640px), updatedAt               // arte oficial não pode ser redistribuída (DPCGL 1.5b)
 
+campaigns/{campaignId}/npcs/{id}                  // fichas de NPC/adversário (só o mestre), separadas dos PJs
+  name, type (tipo de adversário do SRD ou '' p/ NPC social), tier, difficulty, thresholds, hp, stress,
+  attack { modifier, name, range, damage }, experiences, features, description, motives, notes, tags, portraitUrl
+
 campaigns/{campaignId}/map/state                 // documento único, ao vivo (mestre e TV)
   imageId, width, height
   grid: { size, offsetX, offsetY, show }
@@ -413,7 +417,8 @@ Reorganizadas em 28/10/2026 para refletir o que já existe.
 - ✅ Subir de nível (assistente) até o nível 4: conquista de patamar, avanços do Patamar 2, +1 limiares, carta nova, desfazer; o mestre libera o nível no painel. Cartas de nível 2–4 traduzidas.
 - Receber dano (limiares + Armadura), descansos curto/longo, Mão/Cofre com as cartas do SRD.
 - Subir de nível (assistente) — exige transcrever cartas de nível 2+ e opções de avanço.
-- Adversários e contadores no painel do mestre. Anotações por sessão.
+- ✅ NPCs/adversários no painel do mestre (aba separada), com gerador de nome, médias do SRD por patamar e “pôr no mapa”.
+- Equipamento: listas suspensas com reskin (✅). Contadores regressivos e anotações por sessão (a fazer).
 
 ### Fase 4 — Mapa e TV (primeira versão feita)
 - ✅ `/mestre/mapa` com Konva: imagem, grade ajustável, tokens de PJ (retrato) e monstros (ocultos por padrão), névoa pintada por quadrado, zoom/pan e pinça.

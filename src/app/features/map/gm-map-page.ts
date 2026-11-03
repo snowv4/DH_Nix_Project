@@ -11,6 +11,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { MapRepository } from '../../core/firebase/map.repository';
+import { NpcRepository } from '../../core/firebase/npc.repository';
 import { MapGrid, MapToken } from '../../core/models/map';
 import { cellKey, freeSpawnPoint, gridDimensions, paintFog } from '../../core/rules/map';
 import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
@@ -53,8 +54,10 @@ export class GmMapPage {
     { key: 'offsetY', label: 'Deslocar ↕', step: 2 },
   ];
 
+  private readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
+  /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
-    Object.fromEntries(this.characters().map((c) => [c.id, c.portraitUrl])),
+    Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.portraitUrl])),
   );
   protected readonly tokenList = computed(() =>
     Object.values(this.state().tokens).sort((a, b) => a.label.localeCompare(b.label)),

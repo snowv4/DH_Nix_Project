@@ -30,6 +30,8 @@ export interface CreationDraft {
   primaryWeaponId: string;
   secondaryWeaponId: string;
   armorId: string;
+  /** Optional reskin names (same stats, new name). Missing on older drafts. */
+  reskins?: { primary: string; secondary: string; armor: string };
   potionId: string;
   classItem: string;
   experiences: [string, string];
@@ -58,6 +60,7 @@ export function createEmptyDraft(name: string, now = Date.now()): CreationDraft 
     primaryWeaponId: '',
     secondaryWeaponId: '',
     armorId: '',
+    reskins: { primary: '', secondary: '', armor: '' },
     potionId: '',
     classItem: '',
     experiences: ['', ''],

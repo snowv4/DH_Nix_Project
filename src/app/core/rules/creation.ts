@@ -17,6 +17,7 @@ import {
   findWeapon,
 } from '../data/srd';
 import { TRAIT_LABELS } from '../data/traits';
+import { armorDisplayName } from './gear';
 import { Character, TRAIT_IDS, TraitId, Traits } from '../models/character';
 import { BRAWLER_STRIKE_ID, CreationDraft } from '../models/creation';
 import { characterIdFromName, createBlankCharacter } from './character';
@@ -422,13 +423,15 @@ function featureLine(title: string, f: Feature): string {
   return `${title} — ${f.name} (${f.nameEn})\n${f.text}`;
 }
 
-export function describeWeapon(w: Weapon, cast?: TraitId): string {
+/** Sheet text for a weapon. `displayName` is a reskin: new name, same stats. */
+export function describeWeapon(w: Weapon, cast?: TraitId, displayName = ''): string {
   const trait =
     w.trait === 'spellcast' ? (cast ? TRAIT_LABELS[cast] : 'Conjuração') : TRAIT_LABELS[w.trait];
   const type = { phy: 'físico', mag: 'mágico', 'phy/mag': 'físico/mágico' }[w.damageType];
   const hands = w.hands === 2 ? 'duas mãos' : 'uma mão';
   const feature = w.feature ? ` · ${w.feature.name}: ${w.feature.text}` : '';
-  return `${w.name} — ${trait}, ${RANGE_LABELS[w.range]}, ${w.damage} ${type}, ${hands}${feature}`;
+  const name = displayName.trim() ? `${displayName.trim()} (reskin de ${w.name})` : w.name;
+  return `${name} — ${trait}, ${RANGE_LABELS[w.range]}, ${w.damage} ${type}, ${hands}${feature}`;
 }
 
 const BRAWLER_STRIKE_TEXT =
@@ -485,7 +488,11 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
     hp: { max: stats.hp, marked: 0 },
     stress: { max: stats.stress, marked: 0 },
     hope: { max: 6, current: stats.hope },
-    armor: { name: armor?.name ?? '', score: stats.armorScore, slotsMarked: 0 },
+    armor: {
+      name: armor ? armorDisplayName(armor, d.reskins?.armor ?? '') : '',
+      score: stats.armorScore,
+      slotsMarked: 0,
+    },
     thresholds: { major: stats.major, severe: stats.severe },
     experiences: d.experiences.map((name, i) => ({
       name: name.trim(),
@@ -496,9 +503,9 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
       d.primaryWeaponId === BRAWLER_STRIKE_ID
         ? BRAWLER_STRIKE_TEXT
         : primary
-          ? describeWeapon(primary, cast)
+          ? describeWeapon(primary, cast, d.reskins?.primary)
           : '',
-    secondaryWeapon: secondary ? describeWeapon(secondary, cast) : '',
+    secondaryWeapon: secondary ? describeWeapon(secondary, cast, d.reskins?.secondary) : '',
     items: items.join('\n'),
     gold: { handfuls: 1, bags: 0, chests: 0 },
     domainCards: { loadout: '', vault: '' },

@@ -151,22 +151,115 @@
 
     <fieldset class="grid grid-cols-2 gap-3">
       <legend class="label mb-2">Equipamento</legend>
-      <label class="col-span-2 flex flex-col gap-1">
-        <span class="text-sm text-muted">Arma primária</span>
-        <input
-          class="field"
-          formControlName="primaryWeapon"
-          placeholder="Ex.: Espada longa — Força, Corpo a corpo, d10+3"
-        />
-      </label>
-      <label class="col-span-2 flex flex-col gap-1">
-        <span class="text-sm text-muted">Arma secundária</span>
-        <input class="field" formControlName="secondaryWeapon" />
-      </label>
-      <label class="flex flex-col gap-1">
-        <span class="text-sm text-muted">Armadura</span>
-        <input class="field" formControlName="armorName" />
-      </label>
+      @for (slot of weaponSlots; track slot.key) {
+        @let g = gear[slot.key]();
+        <div class="col-span-2 flex flex-col gap-1">
+          <label class="text-sm text-muted" [for]="'weapon-' + slot.key">{{ slot.label }}</label>
+          <div class="flex gap-2">
+            <select
+              [id]="'weapon-' + slot.key"
+              class="field min-w-0 flex-1"
+              (change)="pickWeapon(slot.key, $event)"
+            >
+              <option value="" [selected]="g.choice === ''">Nenhuma</option>
+              @if (slot.key === 'primary') {
+                @for (group of primaryGroups; track group.label) {
+                  <optgroup [label]="group.label">
+                    @for (w of group.weapons; track w.id) {
+                      <option [value]="w.id" [selected]="g.choice === w.id">
+                        {{ w.name }} · {{ w.damage }} · {{ w.hands === 2 ? '2 mãos' : '1 mão' }}
+                      </option>
+                    }
+                  </optgroup>
+                }
+              } @else {
+                @for (w of secondaryWeapons; track w.id) {
+                  <option [value]="w.id" [selected]="g.choice === w.id">
+                    {{ w.name }} · {{ w.damage }}
+                  </option>
+                }
+              }
+              <option value="custom" [selected]="g.choice === 'custom'">
+                Outra (escrever à mão)
+              </option>
+            </select>
+            @if (g.choice && g.choice !== 'custom') {
+              <button
+                type="button"
+                class="btn-ghost shrink-0 px-3 text-sm"
+                [class.!border-hope]="g.reskinOpen"
+                [attr.aria-pressed]="g.reskinOpen"
+                (click)="toggleWeaponReskin(slot.key)"
+              >
+                Reskin
+              </button>
+            }
+          </div>
+          @if (g.reskinOpen && g.choice !== 'custom') {
+            <input
+              class="field text-sm"
+              [value]="g.reskin"
+              (input)="setWeaponReskin(slot.key, $event)"
+              placeholder="Novo nome (mesmos atributos). Ex.: Garra do Dragão"
+              [attr.aria-label]="'Nome do reskin da ' + slot.label"
+            />
+          }
+          @if (g.choice === 'custom') {
+            <input
+              class="field text-sm"
+              [formControlName]="slot.control"
+              placeholder="Ex.: Machado do vovô — Força, Corpo a corpo, d10+3"
+            />
+          } @else if (form.controls[slot.control].value) {
+            <p class="rounded-lg bg-panel-2 px-3 py-2 text-xs text-muted">
+              {{ form.controls[slot.control].value }}
+            </p>
+          }
+        </div>
+      }
+      @let ar = armorChoice();
+      <div class="col-span-2 flex flex-col gap-1">
+        <label class="text-sm text-muted" for="armor-pick">Armadura</label>
+        <div class="flex gap-2">
+          <select id="armor-pick" class="field min-w-0 flex-1" (change)="pickArmor($event)">
+            <option value="" [selected]="ar.choice === ''">Sem armadura</option>
+            @for (a of armors; track a.id) {
+              <option [value]="a.id" [selected]="ar.choice === a.id">
+                {{ a.name }} · {{ a.thresholds[0] }}/{{ a.thresholds[1] }} · {{ a.score }}
+              </option>
+            }
+            <option value="custom" [selected]="ar.choice === 'custom'">
+              Outra (escrever à mão)
+            </option>
+          </select>
+          @if (ar.choice && ar.choice !== 'custom') {
+            <button
+              type="button"
+              class="btn-ghost shrink-0 px-3 text-sm"
+              [class.!border-hope]="ar.reskinOpen"
+              [attr.aria-pressed]="ar.reskinOpen"
+              (click)="toggleArmorReskin()"
+            >
+              Reskin
+            </button>
+          }
+        </div>
+        @if (ar.reskinOpen && ar.choice !== 'custom') {
+          <input
+            class="field text-sm"
+            [value]="ar.reskin"
+            (input)="setArmorReskin($event)"
+            placeholder="Novo nome. Ex.: Casaco de Couro de Dragão"
+            aria-label="Nome do reskin da armadura"
+          />
+        }
+        @if (ar.choice === 'custom') {
+          <input class="field text-sm" formControlName="armorName" placeholder="Nome da armadura" />
+        }
+        <p class="text-xs text-muted">
+          Trocar a armadura recalcula o Valor e os limiares, mantendo seus outros bônus.
+        </p>
+      </div>
       <label class="flex flex-col gap-1">
         <span class="text-sm text-muted">Valor de armadura</span>
         <input

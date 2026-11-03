@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { MapRepository } from '../../core/firebase/map.repository';
+import { NpcRepository } from '../../core/firebase/npc.repository';
 import { MapCanvas } from './map-canvas';
 
 /** `/tv` — what the players see on the TV: no menus, opaque fog, no hidden tokens (spec 4.8). */
@@ -32,7 +33,9 @@ export class TvPage {
   protected readonly state = this.maps.watchState(this.destroyRef);
   private readonly characters = inject(CharacterRepository).watchAll(this.destroyRef);
   protected readonly image = this.maps.watchCurrentImage(this.state, inject(Injector));
+  private readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
+  /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
-    Object.fromEntries(this.characters().map((c) => [c.id, c.portraitUrl])),
+    Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.portraitUrl])),
   );
 }

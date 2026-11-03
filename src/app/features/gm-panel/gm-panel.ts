@@ -15,6 +15,14 @@ import { TRAIT_LABELS } from '../../core/data/traits';
 import { CampaignRepository, MAX_FEAR } from '../../core/firebase/campaign.repository';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { DraftRepository } from '../../core/firebase/draft.repository';
+import { MapRepository } from '../../core/firebase/map.repository';
+import { NpcRepository } from '../../core/firebase/npc.repository';
+import { createNpc, Npc } from '../../core/models/npc';
+import { toggleSlot } from '../../core/rules/character';
+import { freeSpawnPoint } from '../../core/rules/map';
+import { randomName } from '../../core/rules/names';
+import { NpcCard } from '../npcs/npc-card';
+import { NpcDialog } from '../npcs/npc-dialog';
 import { Character, TRAIT_IDS } from '../../core/models/character';
 import { SheetDialog } from './sheet-dialog';
 
@@ -24,7 +32,7 @@ const VIEW_KEY = 'dh-nix.gm-view';
 
 @Component({
   selector: 'app-gm-panel',
-  imports: [RouterLink],
+  imports: [RouterLink, NpcCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-panel.html',
 })
@@ -55,6 +63,75 @@ export class GmPanel {
   }
 
   protected readonly maxSupportedLevel = MAX_SUPPORTED_LEVEL;
+
+  // ---------- NPCs ----------
+  private readonly npcRepo = inject(NpcRepository);
+  private readonly maps = inject(MapRepository);
+  protected readonly tab = signal<'players' | 'npcs'>('players');
+  protected readonly npcs = this.npcRepo.watchAll(this.destroyRef);
+  protected readonly npcQuery = signal('');
+  protected readonly npcMessage = signal('');
+  protected readonly filteredNpcs = computed(() => {
+    const q = normalize(this.npcQuery());
+    return this.npcs().filter((n) => !q || normalize(`${n.name} ${n.tags}`).includes(q));
+  });
+
+  protected newNpc(): void {
+    this.openNpc(createNpc(this.npcRepo.newId(), randomName('human'), 0));
+  }
+
+  protected editNpc(n: Npc): void {
+    this.openNpc(n);
+  }
+
+  protected duplicateNpc(n: Npc): void {
+    void this.npcRepo.save({
+      ...n,
+      id: this.npcRepo.newId(),
+      name: `${n.name} (cópia)`,
+      hp: { ...n.hp, marked: 0 },
+      stress: { ...n.stress, marked: 0 },
+    });
+  }
+
+  protected removeNpc(n: Npc): void {
+    if (window.confirm(`Excluir ${n.name}? Isso não pode ser desfeito.`))
+      void this.npcRepo.remove(n.id);
+  }
+
+  protected tapNpc(n: Npc, track: 'hp' | 'stress', index: number): void {
+    void this.npcRepo.update(n.id, { [track]: toggleSlot(n[track], index) });
+  }
+
+  /** Adds the NPC as a (hidden) token on the battle map, using its portrait. */
+  protected async npcToMap(n: Npc): Promise<void> {
+    const state = await this.maps.readState();
+    const id = `npc-${n.id}-${Date.now().toString(36)}`;
+    await this.maps.upsertToken({
+      id,
+      kind: 'monster',
+      refId: n.id,
+      label: n.name,
+      color: '#8b5cf6',
+      ...freeSpawnPoint(state),
+      size: 1,
+      hidden: true,
+    });
+    this.npcMessage.set(`${n.name} entrou no mapa (oculto da TV).`);
+  }
+
+  private openNpc(n: Npc): void {
+    this.dialog.open(NpcDialog, {
+      data: n,
+      width: '44rem',
+      maxWidth: 'calc(100vw - 1.5rem)',
+      maxHeight: 'calc(100dvh - 1.5rem)',
+    });
+  }
+
+  protected value(e: Event): string {
+    return (e.target as HTMLInputElement).value;
+  }
   protected readonly levelUnlocked = computed(() => this.campaign().levelUnlocked ?? 1);
 
   protected releaseLevel(level: number): void {
@@ -114,4 +191,12 @@ function readView(): View {
   } catch {
     return 'compact';
   }
+}
+
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }

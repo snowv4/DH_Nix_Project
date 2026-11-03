@@ -91,155 +91,222 @@
       </div>
     </section>
 
-    <section aria-label="Personagens">
-      <div class="mb-3 flex items-center justify-between gap-2">
-        <h2 class="label">Mesa ({{ characters().length }})</h2>
-        <div class="flex gap-1 rounded-xl bg-panel p-1" role="group" aria-label="Modo de exibição">
-          <button
-            type="button"
-            class="btn min-h-9 text-sm"
-            [class]="view() === 'compact' ? 'bg-panel-2 text-hope' : 'text-muted'"
-            [attr.aria-pressed]="view() === 'compact'"
-            (click)="setView('compact')"
-          >
-            Resumido
-          </button>
-          <button
-            type="button"
-            class="btn min-h-9 text-sm"
-            [class]="view() === 'extended' ? 'bg-panel-2 text-hope' : 'text-muted'"
-            [attr.aria-pressed]="view() === 'extended'"
-            (click)="setView('extended')"
-          >
-            Estendido
-          </button>
-        </div>
-      </div>
+    <div class="mb-4 flex gap-1 rounded-xl bg-panel p-1" role="tablist" aria-label="Quem mostrar">
+      <button
+        type="button"
+        role="tab"
+        class="btn flex-1"
+        [class]="tab() === 'players' ? 'bg-panel-2 text-hope' : 'text-muted'"
+        [attr.aria-selected]="tab() === 'players'"
+        (click)="tab.set('players')"
+      >
+        Jogadores ({{ characters().length }})
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="btn flex-1"
+        [class]="tab() === 'npcs' ? 'bg-panel-2 text-fear' : 'text-muted'"
+        [attr.aria-selected]="tab() === 'npcs'"
+        (click)="tab.set('npcs')"
+      >
+        NPCs ({{ npcs().length }})
+      </button>
+    </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        @for (c of characters(); track c.id) {
-          <article class="card flex flex-col gap-3">
+    @if (tab() === 'players') {
+      <section aria-label="Personagens">
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <h2 class="label">Mesa ({{ characters().length }})</h2>
+          <div
+            class="flex gap-1 rounded-xl bg-panel p-1"
+            role="group"
+            aria-label="Modo de exibição"
+          >
             <button
               type="button"
-              class="-m-1 rounded-lg p-1 text-left hover:bg-panel-2"
-              (click)="open(c)"
+              class="btn min-h-9 text-sm"
+              [class]="view() === 'compact' ? 'bg-panel-2 text-hope' : 'text-muted'"
+              [attr.aria-pressed]="view() === 'compact'"
+              (click)="setView('compact')"
             >
-              <span class="flex items-center gap-3">
-                @if (c.portraitUrl) {
-                  <img
-                    class="size-12 shrink-0 rounded-lg border-2 border-hope/70 object-cover"
-                    [src]="c.portraitUrl"
-                    alt=""
-                  />
-                } @else {
-                  <span
-                    class="grid size-12 shrink-0 place-items-center rounded-lg border-2 border-hope/40 bg-panel-2 font-display text-xl text-hope"
-                    aria-hidden="true"
-                    >{{ c.name.charAt(0).toUpperCase() }}</span
-                  >
-                }
-                <span class="min-w-0">
-                  <span
-                    class="block font-display text-lg font-bold text-white underline-offset-4 hover:underline"
-                  >
-                    {{ c.name }}
-                  </span>
-                  <span class="block text-xs text-muted">
-                    Nv {{ c.level }}
-                    @if (className(c)) {
-                      · {{ className(c) }}
-                    }
-                    @if (c.subclass) {
-                      · {{ c.subclass }}
-                    }
-                  </span>
-                </span>
-              </span>
+              Resumido
             </button>
+            <button
+              type="button"
+              class="btn min-h-9 text-sm"
+              [class]="view() === 'extended' ? 'bg-panel-2 text-hope' : 'text-muted'"
+              [attr.aria-pressed]="view() === 'extended'"
+              (click)="setView('extended')"
+            >
+              Estendido
+            </button>
+          </div>
+        </div>
 
-            <dl class="grid grid-cols-2 gap-2 text-sm">
-              @for (
-                r of [
-                  { l: 'PV', v: c.hp.marked, m: c.hp.max, cls: 'bg-hp' },
-                  { l: 'Estresse', v: c.stress.marked, m: c.stress.max, cls: 'bg-stress' },
-                  { l: 'Esperança', v: c.hope.current, m: c.hope.max, cls: 'bg-hope' },
-                  { l: 'Armadura', v: c.armor.slotsMarked, m: c.armor.score, cls: 'bg-armor' },
-                ];
-                track r.l
-              ) {
-                <div>
-                  <dt class="flex justify-between text-muted">
-                    <span>{{ r.l }}</span
-                    ><span class="tabular-nums text-white">{{ r.v }}/{{ r.m }}</span>
-                  </dt>
-                  <dd class="mt-1 h-2 overflow-hidden rounded-full bg-ink">
-                    <div
-                      class="h-full rounded-full transition-all"
-                      [class]="r.cls"
-                      [style.width.%]="r.m ? (r.v / r.m) * 100 : 0"
-                    ></div>
-                  </dd>
-                </div>
-              }
-            </dl>
-
-            @if (view() === 'extended') {
-              <div class="grid grid-cols-4 gap-1 text-center text-xs">
-                <div class="rounded-lg bg-panel-2 p-1.5">
-                  <p class="text-muted">Evasão</p>
-                  <p class="text-base font-semibold">{{ c.evasion }}</p>
-                </div>
-                <div class="rounded-lg bg-panel-2 p-1.5">
-                  <p class="text-muted">Maior</p>
-                  <p class="text-base font-semibold">{{ c.thresholds.major }}</p>
-                </div>
-                <div class="rounded-lg bg-panel-2 p-1.5">
-                  <p class="text-muted">Grave</p>
-                  <p class="text-base font-semibold">{{ c.thresholds.severe }}</p>
-                </div>
-                <div class="rounded-lg bg-panel-2 p-1.5">
-                  <p class="text-muted">Profic.</p>
-                  <p class="text-base font-semibold">{{ c.proficiency }}</p>
-                </div>
-              </div>
-              <div class="grid grid-cols-3 gap-1 text-center text-xs">
-                @for (t of traitIds; track t) {
-                  <div class="rounded-lg bg-panel-2 p-1.5">
-                    <p class="text-muted">{{ traitLabels[t] }}</p>
-                    <p class="text-base font-semibold">{{ signed(c.traits[t]) }}</p>
-                  </div>
-                }
-              </div>
-              @if (c.experiences.length) {
-                <p class="text-xs text-muted">
-                  @for (e of c.experiences; track $index; let last = $last) {
-                    <span class="text-white">{{ e.name }}</span> {{ signed(e.bonus)
-                    }}{{ last ? '' : ' · ' }}
-                  }
-                </p>
-              }
-              @if (c.primaryWeapon) {
-                <p class="text-xs"><span class="text-muted">Arma:</span> {{ c.primaryWeapon }}</p>
-              }
-            }
-            <div class="mt-auto flex justify-end border-t border-line/60 pt-2">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          @for (c of characters(); track c.id) {
+            <article class="card flex flex-col gap-3">
               <button
                 type="button"
-                class="btn min-h-9 px-2 text-xs text-muted hover:text-hp"
-                [disabled]="deleting() === c.id"
-                [attr.aria-label]="'Excluir a ficha de ' + c.name"
-                (click)="remove(c)"
+                class="-m-1 rounded-lg p-1 text-left hover:bg-panel-2"
+                (click)="open(c)"
               >
-                {{ deleting() === c.id ? 'Excluindo…' : 'Excluir ficha' }}
+                <span class="flex items-center gap-3">
+                  @if (c.portraitUrl) {
+                    <img
+                      class="size-12 shrink-0 rounded-lg border-2 border-hope/70 object-cover"
+                      [src]="c.portraitUrl"
+                      alt=""
+                    />
+                  } @else {
+                    <span
+                      class="grid size-12 shrink-0 place-items-center rounded-lg border-2 border-hope/40 bg-panel-2 font-display text-xl text-hope"
+                      aria-hidden="true"
+                      >{{ c.name.charAt(0).toUpperCase() }}</span
+                    >
+                  }
+                  <span class="min-w-0">
+                    <span
+                      class="block font-display text-lg font-bold text-white underline-offset-4 hover:underline"
+                    >
+                      {{ c.name }}
+                    </span>
+                    <span class="block text-xs text-muted">
+                      Nv {{ c.level }}
+                      @if (className(c)) {
+                        · {{ className(c) }}
+                      }
+                      @if (c.subclass) {
+                        · {{ c.subclass }}
+                      }
+                    </span>
+                  </span>
+                </span>
               </button>
-            </div>
-          </article>
-        } @empty {
-          <p class="card text-muted">
-            Nenhum personagem ainda. Peça para os jogadores entrarem com o nome do personagem.
-          </p>
+
+              <dl class="grid grid-cols-2 gap-2 text-sm">
+                @for (
+                  r of [
+                    { l: 'PV', v: c.hp.marked, m: c.hp.max, cls: 'bg-hp' },
+                    { l: 'Estresse', v: c.stress.marked, m: c.stress.max, cls: 'bg-stress' },
+                    { l: 'Esperança', v: c.hope.current, m: c.hope.max, cls: 'bg-hope' },
+                    { l: 'Armadura', v: c.armor.slotsMarked, m: c.armor.score, cls: 'bg-armor' },
+                  ];
+                  track r.l
+                ) {
+                  <div>
+                    <dt class="flex justify-between text-muted">
+                      <span>{{ r.l }}</span
+                      ><span class="tabular-nums text-white">{{ r.v }}/{{ r.m }}</span>
+                    </dt>
+                    <dd class="mt-1 h-2 overflow-hidden rounded-full bg-ink">
+                      <div
+                        class="h-full rounded-full transition-all"
+                        [class]="r.cls"
+                        [style.width.%]="r.m ? (r.v / r.m) * 100 : 0"
+                      ></div>
+                    </dd>
+                  </div>
+                }
+              </dl>
+
+              @if (view() === 'extended') {
+                <div class="grid grid-cols-4 gap-1 text-center text-xs">
+                  <div class="rounded-lg bg-panel-2 p-1.5">
+                    <p class="text-muted">Evasão</p>
+                    <p class="text-base font-semibold">{{ c.evasion }}</p>
+                  </div>
+                  <div class="rounded-lg bg-panel-2 p-1.5">
+                    <p class="text-muted">Maior</p>
+                    <p class="text-base font-semibold">{{ c.thresholds.major }}</p>
+                  </div>
+                  <div class="rounded-lg bg-panel-2 p-1.5">
+                    <p class="text-muted">Grave</p>
+                    <p class="text-base font-semibold">{{ c.thresholds.severe }}</p>
+                  </div>
+                  <div class="rounded-lg bg-panel-2 p-1.5">
+                    <p class="text-muted">Profic.</p>
+                    <p class="text-base font-semibold">{{ c.proficiency }}</p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-1 text-center text-xs">
+                  @for (t of traitIds; track t) {
+                    <div class="rounded-lg bg-panel-2 p-1.5">
+                      <p class="text-muted">{{ traitLabels[t] }}</p>
+                      <p class="text-base font-semibold">{{ signed(c.traits[t]) }}</p>
+                    </div>
+                  }
+                </div>
+                @if (c.experiences.length) {
+                  <p class="text-xs text-muted">
+                    @for (e of c.experiences; track $index; let last = $last) {
+                      <span class="text-white">{{ e.name }}</span> {{ signed(e.bonus)
+                      }}{{ last ? '' : ' · ' }}
+                    }
+                  </p>
+                }
+                @if (c.primaryWeapon) {
+                  <p class="text-xs"><span class="text-muted">Arma:</span> {{ c.primaryWeapon }}</p>
+                }
+              }
+              <div class="mt-auto flex justify-end border-t border-line/60 pt-2">
+                <button
+                  type="button"
+                  class="btn min-h-9 px-2 text-xs text-muted hover:text-hp"
+                  [disabled]="deleting() === c.id"
+                  [attr.aria-label]="'Excluir a ficha de ' + c.name"
+                  (click)="remove(c)"
+                >
+                  {{ deleting() === c.id ? 'Excluindo…' : 'Excluir ficha' }}
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p class="card text-muted">
+              Nenhum personagem ainda. Peça para os jogadores entrarem com o nome do personagem.
+            </p>
+          }
+        </div>
+      </section>
+    } @else {
+      <section aria-label="NPCs">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            class="field min-w-0 flex-1"
+            type="search"
+            placeholder="Buscar por nome ou etiqueta…"
+            [value]="npcQuery()"
+            (input)="npcQuery.set(value($event))"
+            aria-label="Buscar NPC"
+          />
+          <button type="button" class="btn-fear shrink-0" (click)="newNpc()">+ Novo NPC</button>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          @for (n of filteredNpcs(); track n.id) {
+            <app-npc-card
+              [npc]="n"
+              (edit)="editNpc(n)"
+              (duplicate)="duplicateNpc(n)"
+              (remove)="removeNpc(n)"
+              (toMap)="npcToMap(n)"
+              (hpTap)="tapNpc(n, 'hp', $event)"
+              (stressTap)="tapNpc(n, 'stress', $event)"
+            />
+          } @empty {
+            <p class="card text-sm text-muted">
+              {{
+                npcs().length
+                  ? 'Nenhum NPC com esse nome ou etiqueta.'
+                  : 'Nenhum NPC ainda. Crie um com “+ Novo NPC” — o botão 🎲 gera um nome.'
+              }}
+            </p>
+          }
+        </div>
+        @if (npcMessage()) {
+          <p class="mt-3 text-sm text-hope" role="status">{{ npcMessage() }}</p>
         }
-      </div>
-    </section>
+      </section>
+    }
   </div>
 </div>

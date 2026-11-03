@@ -14,6 +14,7 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  getDoc,
   onSnapshot,
   setDoc,
   Unsubscribe,
@@ -94,6 +95,12 @@ export class MapRepository {
       { merge: true },
     );
     if (previousId) await deleteDoc(doc(this.imagesRef, previousId));
+  }
+
+  /** One-off read (for adding tokens from outside the map page). */
+  async readState(): Promise<MapState> {
+    const snap = await getDoc(this.stateRef);
+    return { ...emptyMapState(), ...(snap.data() as Partial<MapState> | undefined) };
   }
 
   async setGrid(grid: MapGrid): Promise<void> {

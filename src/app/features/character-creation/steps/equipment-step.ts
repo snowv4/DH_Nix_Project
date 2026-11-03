@@ -85,6 +85,20 @@ interface WeaponGroup {
     }
 
     @if (secondaryAllowed()) {
+      @if (draft().primaryWeaponId && draft().primaryWeaponId !== brawlerStrike) {
+        <label class="mt-3 flex flex-col gap-1 text-sm">
+          <span class="text-muted"
+            >Reskin da arma primária (opcional): mesmo atributo, novo nome</span
+          >
+          <input
+            class="field"
+            [value]="draft().reskins?.primary ?? ''"
+            (input)="setReskin('primary', $event)"
+            placeholder="Ex.: Garra do Dragão"
+          />
+        </label>
+      }
+
       <h3 class="label mt-5">Arma secundária (opcional)</h3>
       <div class="mt-2 flex flex-col gap-2">
         <button
@@ -110,6 +124,20 @@ interface WeaponGroup {
           </button>
         }
       </div>
+    }
+
+    @if (draft().secondaryWeaponId) {
+      <label class="mt-3 flex flex-col gap-1 text-sm">
+        <span class="text-muted"
+          >Reskin da arma secundária (opcional): mesmo atributo, novo nome</span
+        >
+        <input
+          class="field"
+          [value]="draft().reskins?.secondary ?? ''"
+          (input)="setReskin('secondary', $event)"
+          placeholder="Ex.: Garra do Dragão"
+        />
+      </label>
     }
 
     <h3 class="label mt-5">Armadura</h3>
@@ -144,6 +172,18 @@ interface WeaponGroup {
         <span class="block text-xs text-muted">Armadura 0, limiares = nível / 2× nível.</span>
       </button>
     </div>
+
+    @if (draft().armorId) {
+      <label class="mt-3 flex flex-col gap-1 text-sm">
+        <span class="text-muted">Reskin da armadura (opcional): mesmo atributo, novo nome</span>
+        <input
+          class="field"
+          [value]="draft().reskins?.armor ?? ''"
+          (input)="setReskin('armor', $event)"
+          placeholder="Ex.: Garra do Dragão"
+        />
+      </label>
+    }
 
     <h3 class="label mt-5">Poção inicial</h3>
     <div class="mt-2 grid grid-cols-2 gap-2">
@@ -226,6 +266,12 @@ export class EquipmentStep {
   protected describe(w: Weapon): string {
     // Drop the name: it is already shown in bold.
     return describeWeapon(w, spellcastTrait(this.draft())).replace(`${w.name} — `, '');
+  }
+
+  protected setReskin(key: 'primary' | 'secondary' | 'armor', e: Event): void {
+    const reskins = { primary: '', secondary: '', armor: '', ...this.draft().reskins };
+    reskins[key] = (e.target as HTMLInputElement).value;
+    this.store.update({ reskins });
   }
 
   protected pickPrimary(id: string): void {
