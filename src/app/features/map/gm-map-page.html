@@ -54,6 +54,19 @@
       </p>
     }
 
+    <!-- Quick sheet of the selected token (tablet/desktop: floating over the map) -->
+    @if (selected() && sheetOpen() && tool() !== 'attack') {
+      <app-token-sheet
+        class="absolute top-16 left-2 z-10 max-h-[calc(100%-9rem)] w-80 overflow-y-auto rounded-2xl max-sm:hidden"
+        [character]="selectedCharacter()"
+        [npc]="selectedNpc()"
+        [label]="selected()?.label ?? ''"
+        [(extended)]="sheetExtended"
+        (dismiss)="sheetOpen.set(false)"
+        (openFull)="openFullSheet()"
+      />
+    }
+
     <!-- Effect picker -->
     @if (pendingAttack(); as pa) {
       <div
@@ -238,6 +251,17 @@
 
       @switch (panel()) {
         @case ('tokens') {
+          @if (selected() && sheetOpen()) {
+            <app-token-sheet
+              class="sm:hidden"
+              [character]="selectedCharacter()"
+              [npc]="selectedNpc()"
+              [label]="selected()?.label ?? ''"
+              [(extended)]="sheetExtended"
+              (dismiss)="sheetOpen.set(false)"
+              (openFull)="openFullSheet()"
+            />
+          }
           @if (selected(); as t) {
             <section class="card flex flex-col gap-2 !border-hope/60">
               <div class="flex items-center justify-between gap-2">

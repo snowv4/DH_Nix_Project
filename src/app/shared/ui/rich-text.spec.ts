@@ -27,4 +27,11 @@ describe('parseLine', () => {
       text: 'O aliado ganha 1 Esperança.',
     });
   });
+  it('highlights adversary features with punctuation in the name', () => {
+    expect(parseLine('“Tira, Tira!” (Reação): Quando algo acontece.')).toEqual({
+      kind: 'named',
+      name: '“Tira, Tira!” (Reação)',
+      text: 'Quando algo acontece.',
+    });
+  });
 });

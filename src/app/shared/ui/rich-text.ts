@@ -7,6 +7,8 @@ type Line =
 
 /** "Power Push: does X" → a highlighted name followed by its effect. Short label, no sentence inside. */
 const NAMED = /^([^:.!?•]{2,40}):\s+(.+)$/;
+/** Adversary features may have "!" in the name ("Surpresa! (Passiva): …"); the tag marks them. */
+const FEATURE = /^([^:•]{2,60}\((?:Passiva|Ação|Reação|Evolução)\)):\s+(.+)$/;
 const BULLET = /^[•◦-]\s+(.+)$/;
 
 const capitalize = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -19,7 +21,7 @@ export function parseLine(raw: string): Line {
       ? { kind: 'bullet', name: named[1], text: named[2] }
       : { kind: 'bullet', name: '', text: bullet[1] };
   }
-  const named = NAMED.exec(raw);
+  const named = NAMED.exec(raw) ?? FEATURE.exec(raw);
   return named
     ? { kind: 'named', name: named[1], text: capitalize(named[2]) }
     : { kind: 'plain', text: raw };

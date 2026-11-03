@@ -1,4 +1,5 @@
 import {
+  linkedSignal,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -18,6 +19,10 @@ import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 import { IconPicker } from '../../shared/ui/icon-picker';
 import { MapCanvas, MapTool } from './map-canvas';
 import { ATTACK_EFFECTS } from './map-effects';
+import { TokenSheet } from './token-sheet';
+import { Dialog } from '@angular/cdk/dialog';
+import { SheetDialog } from '../gm-panel/sheet-dialog';
+import { NpcDialog } from '../npcs/npc-dialog';
 
 const MONSTER_COLORS = ['#d64545', '#e07b2c', '#3fae5a', '#3b82f6', '#8b5cf6', '#6b7280'];
 /** Keeps the map picture well under Firestore's 1 MB document limit. */
@@ -28,7 +33,7 @@ type PanelTab = 'tokens' | 'map' | 'library';
 
 @Component({
   selector: 'app-gm-map-page',
-  imports: [MapCanvas, RouterLink, IconPicker],
+  imports: [MapCanvas, RouterLink, IconPicker, TokenSheet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-map-page.html',
 })
@@ -50,7 +55,8 @@ export class GmMapPage {
 
   // ---------- People ----------
   protected readonly characters = inject(CharacterRepository).watchAll(this.destroyRef);
-  private readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
+  protected readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
+  private readonly dialog = inject(Dialog);
   /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
     Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.portraitUrl])),
@@ -90,6 +96,18 @@ export class GmMapPage {
     Object.values(this.state().tokens).sort((a, b) => a.label.localeCompare(b.label)),
   );
   protected readonly selected = computed(() => this.state().tokens[this.selectedId()]);
+  /** Sheet behind the selected token (PC or NPC), for the quick sheet card. */
+  protected readonly selectedCharacter = computed(() => {
+    const t = this.selected();
+    return t?.kind === 'pc' ? this.characters().find((c) => c.id === t.refId) : undefined;
+  });
+  protected readonly selectedNpc = computed(() => {
+    const t = this.selected();
+    return t?.kind === 'monster' && t.refId ? this.npcs().find((n) => n.id === t.refId) : undefined;
+  });
+  /** Reopens on every new selection; the ✕ only hides it for the current token. */
+  protected readonly sheetOpen = linkedSignal(() => !!this.selectedId());
+  protected readonly sheetExtended = signal(false);
   /** PCs not on this map yet. */
   protected readonly missingPcs = computed(() => {
     const onMap = new Set(
@@ -336,6 +354,14 @@ export class GmMapPage {
       effect,
       at: Date.now(),
     });
+  }
+
+  protected openFullSheet(): void {
+    const c = this.selectedCharacter();
+    const n = this.selectedNpc();
+    const size = { maxWidth: 'calc(100vw - 1.5rem)', maxHeight: 'calc(100dvh - 1.5rem)' };
+    if (c) this.dialog.open(SheetDialog, { data: c.id, width: '64rem', ...size });
+    else if (n) this.dialog.open(NpcDialog, { data: n, width: '44rem', ...size });
   }
 
   protected cancelAttack(): void {
