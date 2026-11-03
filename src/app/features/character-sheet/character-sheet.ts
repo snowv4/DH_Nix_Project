@@ -33,6 +33,8 @@ import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 import { RichText } from '../../shared/ui/rich-text';
 import { ResourceTrack } from '../../shared/ui/resource-track';
 import { DomainCardBlock } from './domain-card-block';
+import { InventoryList } from './inventory-list';
+import { currentInventory } from '../../core/rules/inventory';
 import { EditSheetDialog } from './edit-sheet-dialog';
 
 type TextField = 'items' | 'features' | 'notes' | 'appearance' | 'background' | 'connections';
@@ -41,7 +43,15 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
 
 @Component({
   selector: 'app-character-sheet',
-  imports: [ResourceTrack, PortraitFrame, DamageThresholds, DomainCardBlock, RichText, RouterLink],
+  imports: [
+    ResourceTrack,
+    PortraitFrame,
+    DamageThresholds,
+    DomainCardBlock,
+    RichText,
+    RouterLink,
+    InventoryList,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',
 })
@@ -58,6 +68,11 @@ export class CharacterSheet implements OnInit {
   /** Shared art for every card, uploaded by anyone at the table. */
   protected readonly cardArt = this.cardArtRepo.watchAll(this.destroyRef);
   protected readonly editingFeatures = signal(false);
+  /** Structured inventory; old sheets are converted from their text on the fly (saved on first edit). */
+  protected readonly inventory = computed(() => {
+    const c = this.character?.();
+    return c ? currentInventory(c) : [];
+  });
   private readonly campaign = inject(CampaignRepository).watchCampaign(this.destroyRef);
 
   /** The GM released a higher level than this character has. */

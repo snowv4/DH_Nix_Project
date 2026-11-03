@@ -18,6 +18,7 @@ import {
 } from '../data/srd';
 import { TRAIT_LABELS } from '../data/traits';
 import { armorDisplayName } from './gear';
+import { itemsFromText } from './inventory';
 import { Character, TRAIT_IDS, TraitId, Traits } from '../models/character';
 import { BRAWLER_STRIKE_ID, CreationDraft } from '../models/creation';
 import { characterIdFromName, createBlankCharacter } from './character';
@@ -507,6 +508,7 @@ export function buildCharacter(d: CreationDraft, now = Date.now()): Character {
           : '',
     secondaryWeapon: secondary ? describeWeapon(secondary, cast, d.reskins?.secondary) : '',
     items: items.join('\n'),
+    inventory: itemsFromText(items.join('\n'), (i) => `start-${i}`),
     gold: { handfuls: 1, bags: 0, chests: 0 },
     domainCards: { loadout: '', vault: '' },
     cards: d.domainCardIds.filter((id) => !!findCard(id)).map((id) => ({ id, active: true })),

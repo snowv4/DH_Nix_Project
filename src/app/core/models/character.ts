@@ -21,6 +21,17 @@ export interface Experience {
   note?: string;
 }
 
+export type ItemCategory = 'consumable' | 'weapon' | 'gear' | 'treasure' | 'other';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  qty: number;
+  category: ItemCategory;
+  /** Effect or description, e.g. "Limpa 1d4 PV". */
+  note: string;
+}
+
 /** A domain card from the SRD data the character owns; `active` = in the loadout (max 5). */
 export interface OwnedCard {
   id: string;
@@ -55,7 +66,9 @@ export interface Character {
   experiences: Experience[];
   primaryWeapon: string;
   secondaryWeapon: string;
+  /** Legacy free-text inventory (one item per line); superseded by `inventory`. */
   items: string;
+  inventory?: InventoryItem[];
   gold: Gold;
   /** Free-text card notes (kept for manual sheets and cards not in the SRD data yet). */
   domainCards: { loadout: string; vault: string };

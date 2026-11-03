@@ -85,7 +85,7 @@
       }
     </nav>
 
-    <div class="grid gap-4 lg:grid-cols-3">
+    <div class="grid gap-4 lg:grid-cols-3 [&>*]:min-w-0">
       <!-- Main -->
       <section class="flex flex-col gap-4" [class]="hiddenUnless('main')">
         <div class="card flex flex-col gap-4">
@@ -231,14 +231,8 @@
           </p>
         </div>
         <div class="card">
-          <label class="label" for="items">Inventário</label>
-          <textarea
-            id="items"
-            class="field mt-2 min-h-72 text-[15px] leading-relaxed field-sizing-content lg:min-h-48"
-            placeholder="Um item por linha"
-            [value]="c.items"
-            (blur)="saveText('items', c.items, $event)"
-          ></textarea>
+          <h2 class="label mb-2">Inventário</h2>
+          <app-inventory-list [items]="inventory()" (changed)="save({ inventory: $event })" />
         </div>
       </section>
 
