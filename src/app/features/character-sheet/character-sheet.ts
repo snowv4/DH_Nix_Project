@@ -33,13 +33,15 @@ import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 import { RichText } from '../../shared/ui/rich-text';
 import { ResourceTrack } from '../../shared/ui/resource-track';
 import { DomainCardBlock } from './domain-card-block';
+import { SessionNotebook } from '../sessions/session-notebook';
+import { sheetPinHash } from '../../core/auth/pin';
 import { InventoryList } from './inventory-list';
 import { currentInventory } from '../../core/rules/inventory';
 import { EditSheetDialog } from './edit-sheet-dialog';
 
 type TextField = 'items' | 'features' | 'notes' | 'appearance' | 'background' | 'connections';
 
-type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
+type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes' | 'sessions';
 
 @Component({
   selector: 'app-character-sheet',
@@ -51,6 +53,7 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes';
     RichText,
     RouterLink,
     InventoryList,
+    SessionNotebook,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',
@@ -60,6 +63,8 @@ export class CharacterSheet implements OnInit {
   /** Shown in the header (e.g. "Sair" for players, "Fechar" in the GM popup). */
   readonly exitLabel = input('Sair');
   readonly exit = output<void>();
+  /** The private session notebook (and sheet PIN) only show for the player, never in the GM popup. */
+  readonly showSessions = input(false);
 
   private readonly repo = inject(CharacterRepository);
   private readonly dialog = inject(Dialog);
@@ -123,6 +128,31 @@ export class CharacterSheet implements OnInit {
     { id: 'cards', label: 'Cartas' },
     { id: 'notes', label: 'Notas e história' },
   ];
+  protected readonly visibleTabs = computed(() =>
+    this.showSessions()
+      ? [...this.tabs, { id: 'sessions' as Tab, label: '📖 Sessões' }]
+      : this.tabs,
+  );
+  protected readonly pinMessage = signal('');
+
+  protected async setPin(c: Character, e: Event): Promise<void> {
+    e.preventDefault();
+    const input = (e.target as HTMLFormElement).elements.namedItem('pin') as HTMLInputElement;
+    const pin = input.value.trim();
+    if (!/^\d{4,8}$/.test(pin)) {
+      this.pinMessage.set('Use de 4 a 8 números.');
+      return;
+    }
+    this.save({ pinHash: await sheetPinHash(c.id, pin) });
+    input.value = '';
+    this.pinMessage.set('PIN salvo. Ele será pedido ao entrar com esta ficha.');
+  }
+
+  protected removePin(): void {
+    if (!window.confirm('Remover o PIN desta ficha?')) return;
+    this.save({ pinHash: '' });
+    this.pinMessage.set('PIN removido.');
+  }
   protected readonly coins: { id: keyof Gold; label: string }[] = [
     { id: 'handfuls', label: 'Punhados' },
     { id: 'bags', label: 'Sacolas' },

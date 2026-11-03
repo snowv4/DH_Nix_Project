@@ -1,0 +1,31 @@
+/* Old parchment: warm base, darker worn edges, a few faint stains. */
+.parchment {
+  background:
+    radial-gradient(circle at 18% 22%, rgb(160 120 60 / 0.1), transparent 22%),
+    radial-gradient(circle at 82% 70%, rgb(140 100 50 / 0.12), transparent 26%),
+    radial-gradient(ellipse at center, transparent 55%, rgb(120 85 40 / 0.35) 100%),
+    linear-gradient(180deg, #f6ecd2, #efe1bd);
+  box-shadow:
+    inset 0 0 40px rgb(110 75 30 / 0.35),
+    0 6px 20px rgb(0 0 0 / 0.45);
+}
+
+.parchment-text,
+.parchment-ink {
+  font-family: 'Caveat', 'Segoe Print', cursive;
+  color: #3b2a1a;
+}
+
+.parchment-text {
+  padding: 1.25rem 1.4rem;
+  font-size: 1.45rem;
+  line-height: 2rem;
+}
+
+.parchment-text::placeholder {
+  color: rgb(59 42 26 / 0.45);
+}
+
+.parchment-ink {
+  font-size: 1.35rem;
+}

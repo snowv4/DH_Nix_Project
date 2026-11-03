@@ -1,0 +1,162 @@
+@let list = pages();
+<div class="flex flex-col gap-3">
+  <div class="flex flex-wrap items-center gap-2">
+    @if (list?.length) {
+      <select class="field min-w-0 flex-1" aria-label="Escolher sessão" (change)="select($event)">
+        @for (p of list; track p.id) {
+          <option [value]="p.id" [selected]="p.id === selectedId()">{{ label(p) }}</option>
+        }
+      </select>
+    }
+    <button type="button" class="btn-hope shrink-0" (click)="newPage()">+ Nova sessão</button>
+  </div>
+
+  @if (list === undefined) {
+    <p class="text-sm text-muted">Abrindo o caderno…</p>
+  } @else if (page(); as p) {
+    <div class="flex flex-wrap items-end gap-2">
+      <label class="flex min-w-0 flex-[2] flex-col gap-1 text-xs text-muted">
+        Título (opcional)
+        <input
+          class="field"
+          [value]="p.title"
+          (input)="edit({ title: value($event) })"
+          placeholder="Ex.: A emboscada na ponte"
+        />
+      </label>
+      <label class="flex flex-col gap-1 text-xs text-muted">
+        Data
+        <input
+          class="field"
+          type="date"
+          [value]="p.date"
+          (change)="edit({ date: value($event) })"
+        />
+      </label>
+    </div>
+
+    <!-- Tools -->
+    <div
+      class="sticky top-12 z-10 flex flex-wrap items-center gap-1 rounded-xl border border-line bg-ink/95 p-1 backdrop-blur lg:top-2"
+      role="toolbar"
+      aria-label="Ferramentas do caderno"
+    >
+      <button
+        type="button"
+        class="btn min-h-10 px-3 text-sm"
+        [class]="mode() === 'off' ? 'bg-hope text-ink' : 'text-muted'"
+        [attr.aria-pressed]="mode() === 'off'"
+        (click)="mode.set('off')"
+      >
+        ⌨️ Texto
+      </button>
+      <button
+        type="button"
+        class="btn min-h-10 px-3 text-sm"
+        [class]="mode() === 'pen' ? 'bg-hope text-ink' : 'text-muted'"
+        [attr.aria-pressed]="mode() === 'pen'"
+        (click)="mode.set('pen')"
+      >
+        ✍️ Caneta
+      </button>
+      <button
+        type="button"
+        class="btn min-h-10 px-3 text-sm"
+        [class]="mode() === 'eraser' ? 'bg-hope text-ink' : 'text-muted'"
+        [attr.aria-pressed]="mode() === 'eraser'"
+        (click)="mode.set('eraser')"
+      >
+        🧽 Borracha
+      </button>
+      @if (mode() === 'pen') {
+        <span class="mx-1 h-6 w-px bg-line"></span>
+        @for (ink of inks; track $index; let i = $index) {
+          <button
+            type="button"
+            class="grid size-10 place-items-center"
+            [attr.aria-label]="'Tinta ' + (i + 1)"
+            [attr.aria-pressed]="color() === i"
+            (click)="color.set(i)"
+          >
+            <span
+              class="block size-6 rounded-full border-2"
+              [style.background]="ink"
+              [class]="color() === i ? 'border-hope' : 'border-transparent'"
+            ></span>
+          </button>
+        }
+        <select
+          class="field min-h-10 w-auto py-1 text-sm"
+          aria-label="Espessura"
+          (change)="penWidth.set(+value($event))"
+        >
+          @for (w of widths; track w.value) {
+            <option [value]="w.value" [selected]="w.value === penWidth()">{{ w.label }}</option>
+          }
+        </select>
+      }
+      <span class="flex-1"></span>
+      <button
+        type="button"
+        class="btn min-h-10 px-3 text-sm text-muted"
+        [disabled]="!canUndo()"
+        (click)="undo()"
+      >
+        ↶ Desfazer
+      </button>
+      <button
+        type="button"
+        class="btn min-h-10 px-3 text-xs"
+        [class]="penOnly() ? 'bg-panel-2 text-hope' : 'text-muted'"
+        [attr.aria-pressed]="penOnly()"
+        (click)="togglePenOnly()"
+        title="Ignora o dedo e a palma; o dedo rola a página"
+      >
+        🖊 Só caneta
+      </button>
+    </div>
+
+    <!-- Parchment page: text underneath, ink on top -->
+    <div class="parchment relative overflow-hidden rounded-lg">
+      <textarea
+        class="parchment-text absolute inset-0 resize-none bg-transparent focus:outline-none"
+        [style.pointer-events]="mode() === 'off' ? 'auto' : 'none'"
+        [value]="p.text"
+        (input)="edit({ text: value($event) })"
+        placeholder="Escreva aqui o que rolou na sessão… ou troque para ✍️ Caneta e escreva à mão."
+        aria-label="Anotações da sessão"
+      ></textarea>
+      <app-handwriting-canvas
+        class="relative"
+        [strokes]="strokes()"
+        [height]="p.height"
+        [mode]="mode()"
+        [color]="color()"
+        [width]="penWidth()"
+        [penOnly]="penOnly()"
+        (strokesChange)="onStrokes($event)"
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
+      <span>{{ saving() ? 'Salvando…' : 'Salvo automaticamente' }} · só você vê este caderno</span>
+      <span class="flex-1"></span>
+      <button type="button" class="btn-ghost min-h-9 px-3 text-xs" (click)="morePaper()">
+        + Mais papel
+      </button>
+      <button type="button" class="btn min-h-9 px-2 text-xs hover:text-hp" (click)="deletePage()">
+        Apagar página
+      </button>
+    </div>
+    @if (warning()) {
+      <p class="rounded-lg bg-hp/15 px-3 py-2 text-sm text-hp" role="alert">{{ warning() }}</p>
+    }
+  } @else {
+    <div class="parchment grid min-h-60 place-items-center rounded-lg p-6 text-center">
+      <p class="parchment-ink max-w-xs">
+        Seu caderno está vazio. Toque em <strong>+ Nova sessão</strong> para abrir a primeira
+        página.
+      </p>
+    </div>
+  }
+</div>

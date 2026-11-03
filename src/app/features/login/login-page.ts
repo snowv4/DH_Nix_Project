@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { isGmPin } from '../../core/auth/pin';
+import { isGmPin, sheetPinHash } from '../../core/auth/pin';
 import { SessionService } from '../../core/auth/session.service';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { DraftRepository } from '../../core/firebase/draft.repository';
@@ -9,7 +9,7 @@ import { FirebaseService } from '../../core/firebase/firebase.service';
 import { characterIdFromName, createBlankCharacter } from '../../core/rules/character';
 import { LicenseNotice } from '../../shared/ui/license-notice';
 
-type Step = 'pick' | 'pin' | 'create';
+type Step = 'pick' | 'pin' | 'create' | 'sheetPin';
 
 /** Dropdown values: `char:<id>`, `draft:<id>` or `gm`. */
 const GM_OPTION = 'gm';
@@ -17,6 +17,7 @@ const GM_OPTION = 'gm';
 interface Entry {
   id: string;
   name: string;
+  pinHash?: string;
 }
 
 @Component({
@@ -57,6 +58,13 @@ export class LoginPage implements OnInit {
   protected readonly pickForm = new FormGroup({ pick: this.pick });
   protected readonly createForm = new FormGroup({ name: this.name });
   protected readonly pinForm = new FormGroup({ pin: this.pin });
+  protected readonly sheetPin = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required],
+  });
+  protected readonly sheetPinForm = new FormGroup({ sheetPin: this.sheetPin });
+  /** Character waiting for its PIN. */
+  protected readonly locked = signal<Entry | null>(null);
 
   ngOnInit(): void {
     void this.loadList();
@@ -69,11 +77,31 @@ export class LoginPage implements OnInit {
       return;
     }
     const [kind, id] = value.split(':');
-    if (kind === 'char') this.enterSheet(id);
+    if (kind === 'char') {
+      const entry = this.characterList().find((c) => c.id === id);
+      if (entry?.pinHash) {
+        this.locked.set(entry);
+        this.sheetPin.reset();
+        this.goTo('sheetPin');
+        return;
+      }
+      this.enterSheet(id);
+    }
     if (kind === 'draft') {
       const draft = this.draftList().find((d) => d.id === id);
       this.openGuide(id, draft?.name ?? id);
     }
+  }
+
+  protected async submitSheetPin(): Promise<void> {
+    const entry = this.locked();
+    if (!entry) return;
+    if ((await sheetPinHash(entry.id, this.sheetPin.value)) !== entry.pinHash) {
+      this.error.set('PIN incorreto.');
+      this.sheetPin.reset();
+      return;
+    }
+    this.enterSheet(entry.id);
   }
 
   protected async submitPin(): Promise<void> {

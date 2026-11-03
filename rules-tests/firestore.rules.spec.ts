@@ -34,6 +34,7 @@ describe('firestore.rules', () => {
     'campaigns/nix/map/state',
     'campaigns/nix/mapImages/abc',
     'campaigns/nix/npcs/goblin',
+    'campaigns/nix/characters/kote/sessionNotes/p1',
   ];
 
   for (const path of paths) {

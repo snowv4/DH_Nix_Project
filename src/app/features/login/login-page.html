@@ -84,6 +84,28 @@
           <button type="button" class="btn-ghost" (click)="goTo('pick')">Voltar</button>
         </form>
       }
+      @case ('sheetPin') {
+        <form
+          class="mt-6 flex flex-col gap-3"
+          [formGroup]="sheetPinForm"
+          (ngSubmit)="submitSheetPin()"
+        >
+          <label for="sheet-pin" class="label">🔒 PIN de {{ locked()?.name }}</label>
+          <input
+            id="sheet-pin"
+            class="field pl-[calc(0.75rem+0.5em)] text-center text-2xl tracking-[0.5em]"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="8"
+            formControlName="sheetPin"
+          />
+          <button type="submit" class="btn-hope mt-1" [disabled]="sheetPin.invalid">
+            Abrir ficha
+          </button>
+          <button type="button" class="btn-ghost" (click)="goTo('pick')">Voltar</button>
+        </form>
+      }
       @case ('create') {
         <form class="mt-6 flex flex-col gap-3" [formGroup]="createForm" (ngSubmit)="startGuide()">
           <label for="name" class="label">Nome do novo personagem</label>

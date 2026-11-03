@@ -9,6 +9,7 @@ import { CharacterSheet } from './character-sheet';
   imports: [CharacterSheet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<app-character-sheet
+    [showSessions]="!isGm"
     [characterId]="id()"
     [exitLabel]="isGm ? 'Painel' : 'Sair'"
     (exit)="leave()"

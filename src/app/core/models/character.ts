@@ -80,6 +80,8 @@ export interface Character {
   /** Brawler Combo Die (d4 at level 1). */
   comboDie?: string;
   levelHistory?: LevelRecord[];
+  /** Optional sheet PIN (salted SHA-256, see core/auth/pin.ts). */
+  pinHash?: string;
   features: string;
   appearance: string;
   background: string;

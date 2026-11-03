@@ -293,13 +293,15 @@ campaigns/{campaignId}/characters/{characterId}
   domainCards: { loadout, vault }     // texto livre p/ cartas fora dos dados
   inventory: { primaryWeapon, secondaryWeapon, items: [...], gold: { handfuls, bags, chests } }
   backstory: { answers: {...}, appearance, ... }, connections: {...}
+  pinHash                            // PIN opcional da ficha (sha256 com o id), pedido no login
+  inventory: [{ id, name, qty, category, note }]
   levelHistory: [{ level, advancements: [ids], summary: [texto], before: {campos antes}, appliedAt }]  // desfazer = restaurar `before`
   markedTraits: [traitId], stances: [id], comboDie
   notes: string
   updatedAt
 
-campaigns/{campaignId}/characters/{characterId}/sessionNotes/{sessionId}
-  text, updatedAt
+campaigns/{campaignId}/characters/{characterId}/sessionNotes/{pageId}   // caderno PRIVADO do jogador (o mestre não vê)
+  number, date, title, text, strokes (escrita à mão codificada), height, updatedAt
 
 campaigns/{campaignId}/sessions/{sessionId}
   number, date, gmSummary, active: bool

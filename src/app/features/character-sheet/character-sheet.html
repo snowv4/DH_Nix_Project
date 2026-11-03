@@ -72,7 +72,7 @@
       class="sticky top-0 z-10 -mx-3 flex gap-1 overflow-x-auto bg-ink/95 px-3 py-1 backdrop-blur lg:hidden"
       aria-label="Seções da ficha"
     >
-      @for (t of tabs; track t.id) {
+      @for (t of visibleTabs(); track t.id) {
         <button
           type="button"
           class="btn shrink-0 text-sm"
@@ -360,6 +360,46 @@
           }
         </div>
       </section>
+
+      <!-- Private session notebook (player only) -->
+      @if (showSessions()) {
+        <section class="flex flex-col gap-4 lg:col-span-3" [class]="hiddenUnless('sessions')">
+          <div class="card">
+            <h2 class="label mb-3 hidden lg:block">📖 Caderno de sessões</h2>
+            <app-session-notebook [characterId]="c.id" />
+          </div>
+          <details class="card text-sm">
+            <summary class="cursor-pointer text-muted">
+              🔒 PIN da ficha {{ c.pinHash ? '(ativo)' : '(opcional)' }}
+            </summary>
+            <p class="mt-2 text-xs text-muted">
+              Com PIN, a tela de entrada pede o número antes de abrir esta ficha. É uma tranca
+              simples entre amigos, não um cofre.
+            </p>
+            <form class="mt-2 flex flex-wrap gap-2" (submit)="setPin(c, $event)">
+              <input
+                class="field w-40 text-center tracking-widest"
+                name="pin"
+                type="password"
+                inputmode="numeric"
+                autocomplete="new-password"
+                maxlength="8"
+                placeholder="Novo PIN"
+                aria-label="Novo PIN da ficha"
+              />
+              <button type="submit" class="btn-hope">
+                {{ c.pinHash ? 'Trocar PIN' : 'Definir PIN' }}
+              </button>
+              @if (c.pinHash) {
+                <button type="button" class="btn-ghost" (click)="removePin()">Remover PIN</button>
+              }
+            </form>
+            @if (pinMessage()) {
+              <p class="mt-2 text-xs text-hope" role="status">{{ pinMessage() }}</p>
+            }
+          </details>
+        </section>
+      }
     </div>
   </div>
 }

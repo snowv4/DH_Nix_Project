@@ -26,9 +26,13 @@ export class CharacterRepository {
   }
 
   /** One-off read for the login dropdown (no live listener needed there). */
-  async listNames(): Promise<{ id: string; name: string }[]> {
+  async listNames(): Promise<{ id: string; name: string; pinHash: string }[]> {
     const snap = await getDocs(query(this.charactersRef, orderBy('name')));
-    return snap.docs.map((d) => ({ id: d.id, name: String(d.data()['name'] ?? d.id) }));
+    return snap.docs.map((d) => ({
+      id: d.id,
+      name: String(d.data()['name'] ?? d.id),
+      pinHash: String(d.data()['pinHash'] ?? ''),
+    }));
   }
 
   async create(character: Character): Promise<void> {
