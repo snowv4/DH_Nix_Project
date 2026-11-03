@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { ADVERSARY_TYPES, RANGE_LABELS, Range } from '../../core/data/srd';
 import { Npc } from '../../core/models/npc';
 import { DamageThresholds } from '../../shared/ui/damage-thresholds';
+import { TokenIconView } from '../../shared/ui/icon-picker';
 import { ResourceTrack } from '../../shared/ui/resource-track';
 import { RichText } from '../../shared/ui/rich-text';
 
 /** Compact NPC stat block for the GM panel: everything needed mid-combat at a glance. */
 @Component({
   selector: 'app-npc-card',
-  imports: [ResourceTrack, DamageThresholds, RichText],
+  imports: [ResourceTrack, DamageThresholds, RichText, TokenIconView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let n = npc();
@@ -24,8 +25,13 @@ import { RichText } from '../../shared/ui/rich-text';
           <span
             class="grid size-14 shrink-0 place-items-center rounded-lg border-2 border-fear/40 bg-panel-2 font-display text-2xl text-fear"
             aria-hidden="true"
-            >{{ n.name.charAt(0).toUpperCase() }}</span
           >
+            @if (n.icon) {
+              <app-token-icon class="size-9" [icon]="n.icon" />
+            } @else {
+              {{ n.name.charAt(0).toUpperCase() }}
+            }
+          </span>
         }
         <div class="min-w-0 flex-1">
           <button
@@ -78,7 +84,9 @@ import { RichText } from '../../shared/ui/rich-text';
         @if (!n.hp.max && !n.stress.max) {
           <p class="text-xs text-muted">Defina PV e Estresse em “Editar”.</p>
         }
-        <app-damage-thresholds [major]="n.thresholds.major" [severe]="n.thresholds.severe" />
+        @if (n.thresholds.major) {
+          <app-damage-thresholds [major]="n.thresholds.major" [severe]="n.thresholds.severe" />
+        }
         @if (n.attack.name || n.attack.damage) {
           <p class="rounded-lg bg-panel-2 px-3 py-2 text-sm">
             <span class="font-semibold text-white">⚔ {{ n.attack.name || 'Ataque' }}</span>

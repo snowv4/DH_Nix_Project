@@ -23,6 +23,7 @@ import { freeSpawnPoint } from '../../core/rules/map';
 import { randomName } from '../../core/rules/names';
 import { NpcCard } from '../npcs/npc-card';
 import { NpcDialog } from '../npcs/npc-dialog';
+import { BestiaryDialog } from '../npcs/bestiary-dialog';
 import { Character, TRAIT_IDS } from '../../core/models/character';
 import { SheetDialog } from './sheet-dialog';
 
@@ -115,12 +116,21 @@ export class GmPanel {
       kind: 'monster',
       refId: n.id,
       label: n.name,
+      icon: n.icon ?? '',
       color: '#8b5cf6',
       ...freeSpawnPoint(active.state),
       size: 1,
       hidden: true,
     });
     this.npcMessage.set(`${n.name} entrou no mapa “${active.state.name}” (oculto da TV).`);
+  }
+
+  protected openBestiary(): void {
+    this.dialog.open(BestiaryDialog, {
+      width: '44rem',
+      maxWidth: 'calc(100vw - 1.5rem)',
+      maxHeight: 'calc(100dvh - 1.5rem)',
+    });
   }
 
   private openNpc(n: Npc): void {

@@ -28,3 +28,9 @@ Coloque a imagem em `public/images/login-bg.jpg`.
 Este projeto inclui materiais do Daggerheart System Reference Document 2.0, © Critical Role, LLC, sob os termos da Darrington Press Community Gaming License (DPCGL). Mais informações em https://www.daggerheart.com e a licença em https://darringtonpress.com/license/.
 
 O conteúdo do SRD em `src/app/core/data/srd/` foi **traduzido para o português e resumido/adaptado** por este projeto (descrições de ancestralidades e comunidades estão condensadas). Não houve modificações anteriores por terceiros. Este projeto não é afiliado, patrocinado nem endossado pela Darrington Press ou pela Critical Role.
+
+Os adversários do Patamar 1 (`adversaries-tier1.ts`) tiveram os números extraídos do PDF do SRD e os textos traduzidos por este projeto.
+
+## Ícones
+
+Os ícones dos tokens (`src/app/core/data/token-icons.ts`, gerado por `npm run icons`) vêm de [game-icons.net](https://game-icons.net), criados por Lorc, Delapouite e colaboradores, sob a licença [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Só os caminhos SVG foram extraídos, sem modificação.

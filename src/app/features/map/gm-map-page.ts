@@ -15,6 +15,7 @@ import { NpcRepository } from '../../core/firebase/npc.repository';
 import { MapGrid, MapToken } from '../../core/models/map';
 import { cellKey, freeSpawnPoint, gridDimensions, paintFog } from '../../core/rules/map';
 import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
+import { IconPicker } from '../../shared/ui/icon-picker';
 import { MapCanvas, MapTool } from './map-canvas';
 import { ATTACK_EFFECTS } from './map-effects';
 
@@ -27,7 +28,7 @@ type PanelTab = 'tokens' | 'map' | 'library';
 
 @Component({
   selector: 'app-gm-map-page',
-  imports: [MapCanvas, RouterLink],
+  imports: [MapCanvas, RouterLink, IconPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-map-page.html',
 })
@@ -73,6 +74,7 @@ export class GmMapPage {
   protected readonly error = signal('');
   protected readonly monsterName = signal('');
   protected readonly monsterColor = signal(MONSTER_COLORS[0]);
+  protected readonly monsterIcon = signal('');
   protected readonly colors = MONSTER_COLORS;
   protected readonly gridRows: {
     key: 'size' | 'offsetX' | 'offsetY';
@@ -241,6 +243,7 @@ export class GmMapPage {
       kind: 'monster',
       refId: n.id,
       label: n.name,
+      icon: n.icon ?? '',
       color: '#8b5cf6',
       hidden: true,
     });
@@ -254,6 +257,7 @@ export class GmMapPage {
       kind: 'monster',
       refId: '',
       label,
+      icon: this.monsterIcon(),
       color: this.monsterColor(),
       hidden: true,
     });

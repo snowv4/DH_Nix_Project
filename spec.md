@@ -325,13 +325,14 @@ campaigns/{campaignId}/cardArt/{cardId}            // arte enviada pela mesa p/ 
 
 campaigns/{campaignId}/npcs/{id}                  // fichas de NPC/adversário (só o mestre), separadas dos PJs
   name, type (tipo de adversário do SRD ou '' p/ NPC social), tier, difficulty, thresholds, hp, stress,
-  attack { modifier, name, range, damage }, experiences, features, description, motives, notes, tags, portraitUrl
+  attack { modifier, name, range, damage }, experiences, features, description, motives, notes, tags, portraitUrl, icon (ícone do token)
+  // o Bestiário (Patamar 1 do SRD, em core/data/srd/adversaries-tier1.ts) importa um adversário como NPC editável
 
 campaigns/{campaignId}/maps/{mapId}               // biblioteca de mapas salvos (ao vivo no mestre e na TV)
   name, imageId, width, height
   grid: { size, offsetX, offsetY, show }
   fog: { enabled, revealed: ["col,row"] }          // névoa por quadrado; na TV é opaca
-  tokens: { [tokenId]: { kind: 'pc'|'monster', refId, label, color, x, y, size, hidden } }
+  tokens: { [tokenId]: { kind: 'pc'|'monster', refId, label, color, x, y, size, hidden, icon? } }
   lastEvent?: { id, type: 'ruler'|'attack', from{x,y}, to{x,y}, effect, at }  // régua/animação transmitida à TV
 
 campaigns/{campaignId}/map/active                 // { mapId } — qual mapa a TV mostra

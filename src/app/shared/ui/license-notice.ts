@@ -18,6 +18,20 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
         >daggerheart.com</a
       >. Projeto de fãs, sem afiliação com a Darrington Press.
     </p>
+    <p class="mt-1 text-center text-[11px] leading-snug text-muted/80">
+      Ícones dos tokens:
+      <a class="underline" href="https://game-icons.net" target="_blank" rel="noopener"
+        >game-icons.net</a
+      >
+      (Lorc, Delapouite e colaboradores),
+      <a
+        class="underline"
+        href="https://creativecommons.org/licenses/by/3.0/"
+        target="_blank"
+        rel="noopener"
+        >CC BY 3.0</a
+      >.
+    </p>
   `,
 })
 export class LicenseNotice {}

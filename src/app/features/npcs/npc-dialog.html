@@ -38,6 +38,8 @@
             🎲 Nome
           </button>
         </div>
+        <span class="label mt-1">Ícone do token</span>
+        <app-icon-picker [(value)]="icon" />
         <label class="flex items-center gap-2 text-sm text-muted">
           Estilo do nome:
           <select class="field min-h-9 flex-1 py-1 text-sm" (change)="setStyle($event)">

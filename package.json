@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "icons": "node scripts/build-token-icons.mjs",
     "emulators": "firebase emulators:start --only auth,firestore",
     "test:rules": "firebase emulators:exec --only firestore --project demo-dh-nix-rules \"vitest run --config rules-tests/vitest.config.ts\""
   },
@@ -32,6 +33,7 @@
     "@angular/compiler-cli": "^22.2.0",
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^6.0.0",
+    "@iconify-json/game-icons": "^1.2.4",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "22.6.0",
     "eslint": "^10.12.0",

@@ -8,3 +8,4 @@ export * from './equipment';
 export * from './experiences';
 export * from './advancements';
 export * from './adversaries';
+export * from './adversaries-tier1';

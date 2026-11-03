@@ -12,12 +12,13 @@ import { Npc } from '../../core/models/npc';
 import { clamp } from '../../core/rules/character';
 import { NAME_STYLES, NameStyle, randomName } from '../../core/rules/names';
 import { PortraitFrame } from '../../shared/ui/portrait-frame';
+import { IconPicker } from '../../shared/ui/icon-picker';
 import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 
 /** Create/edit an NPC or adversary. Data = the NPC (new ones come pre-filled). */
 @Component({
   selector: 'app-npc-dialog',
-  imports: [ReactiveFormsModule, PortraitFrame],
+  imports: [ReactiveFormsModule, PortraitFrame, IconPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './npc-dialog.html',
 })
@@ -33,6 +34,7 @@ export class NpcDialog {
   protected readonly exampleExperiences = ADVERSARY_EXAMPLE_EXPERIENCES;
   protected readonly nameStyle = signal<NameStyle>('human');
   protected readonly portrait = signal(this.npc.portraitUrl);
+  protected readonly icon = signal(this.npc.icon ?? '');
   protected readonly saving = signal(false);
   protected readonly isNew = !this.npc.updatedAt;
 
@@ -121,6 +123,7 @@ export class NpcDialog {
         notes: v.notes,
         tags: v.tags,
         portraitUrl: this.portrait(),
+        icon: this.icon(),
       });
       this.ref.close();
     } finally {

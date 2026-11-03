@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import Konva from 'konva';
+import { TOKEN_ICON_BOX, TOKEN_ICON_BY_ID } from '../../core/data/token-icons';
 import { MapEvent, MapState, MapToken } from '../../core/models/map';
 import {
   cellAt,
@@ -332,20 +333,38 @@ export class MapCanvas {
       group.add(clip);
     } else {
       group.add(new Konva.Circle({ radius: r, fill: t.color }));
-      group.add(
-        new Konva.Text({
-          text: t.label.charAt(0).toUpperCase(),
-          fontSize: r,
-          fontStyle: 'bold',
-          fill: '#fff',
-          width: r * 2,
-          height: r * 2,
-          x: -r,
-          y: -r,
-          align: 'center',
-          verticalAlign: 'middle',
-        }),
-      );
+      const icon = t.icon ? TOKEN_ICON_BY_ID.get(t.icon) : undefined;
+      if (icon) {
+        // Icon fills ~64% of the disc; the path lives in a 512 box.
+        const scale = (r * 1.28) / TOKEN_ICON_BOX;
+        group.add(
+          new Konva.Path({
+            data: icon.path,
+            fill: '#fff',
+            scaleX: scale,
+            scaleY: scale,
+            x: -r * 0.64,
+            y: -r * 0.64,
+            shadowColor: '#000',
+            shadowBlur: 2,
+            shadowOpacity: 0.5,
+          }),
+        );
+      } else
+        group.add(
+          new Konva.Text({
+            text: t.label.charAt(0).toUpperCase(),
+            fontSize: r,
+            fontStyle: 'bold',
+            fill: '#fff',
+            width: r * 2,
+            height: r * 2,
+            x: -r,
+            y: -r,
+            align: 'center',
+            verticalAlign: 'middle',
+          }),
+        );
     }
     group.add(
       new Konva.Circle({

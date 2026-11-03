@@ -20,6 +20,8 @@ export interface MapToken {
   size: number;
   /** Hidden tokens are only drawn for the GM. */
   hidden: boolean;
+  /** TOKEN_ICONS id drawn instead of the initial (portraits still win). */
+  icon?: string;
 }
 
 /** Effects the GM broadcasts to the TV (ruler line, attack animations). */

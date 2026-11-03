@@ -273,14 +273,19 @@
       <section aria-label="NPCs">
         <div class="mb-3 flex flex-wrap items-center gap-2">
           <input
-            class="field min-w-0 flex-1"
+            class="field min-w-0 flex-1 max-sm:basis-full"
             type="search"
             placeholder="Buscar por nome ou etiqueta…"
             [value]="npcQuery()"
             (input)="npcQuery.set(value($event))"
             aria-label="Buscar NPC"
           />
-          <button type="button" class="btn-fear shrink-0" (click)="newNpc()">+ Novo NPC</button>
+          <button type="button" class="btn flex-1 px-3 sm:flex-none" (click)="openBestiary()">
+            📖 Bestiário
+          </button>
+          <button type="button" class="btn-fear flex-1 sm:flex-none" (click)="newNpc()">
+            + Novo NPC
+          </button>
         </div>
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           @for (n of filteredNpcs(); track n.id) {

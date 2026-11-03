@@ -18,6 +18,8 @@ export interface Npc {
   motives: string;
   notes: string;
   portraitUrl: string;
+  /** TOKEN_ICONS id for map tokens ('' = initial letter). */
+  icon?: string;
   /** Free tags for quick filtering ("aliado", "vila", "chefe"…). */
   tags: string;
   updatedAt: number;
@@ -40,6 +42,7 @@ export function createNpc(id: string, name: string, now = Date.now()): Npc {
     motives: '',
     notes: '',
     portraitUrl: '',
+    icon: '',
     tags: '',
     updatedAt: now,
   };
