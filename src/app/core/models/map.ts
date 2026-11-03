@@ -22,8 +22,20 @@ export interface MapToken {
   hidden: boolean;
 }
 
-/** `campaigns/nix/map/state` — the single live battle map (spec 4.7). */
+/** Effects the GM broadcasts to the TV (ruler line, attack animations). */
+export interface MapEvent {
+  id: string;
+  type: 'ruler' | 'attack';
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  /** Attack effect id (see ATTACK_EFFECTS) — empty for the ruler. */
+  effect: string;
+  at: number;
+}
+
+/** `campaigns/nix/maps/{id}` — one saved battle map / scene (spec 4.7). */
 export interface MapState {
+  name: string;
   imageId: string;
   width: number;
   height: number;
@@ -31,11 +43,21 @@ export interface MapState {
   /** When enabled, everything is fogged on the TV except `revealed` cells ("col,row"). */
   fog: { enabled: boolean; revealed: string[] };
   tokens: Record<string, MapToken>;
+  lastEvent?: MapEvent;
+  updatedAt: number;
+}
+
+export interface MapInfo {
+  id: string;
+  name: string;
+  imageId: string;
+  tokenCount: number;
   updatedAt: number;
 }
 
 export function emptyMapState(): MapState {
   return {
+    name: 'Mapa',
     imageId: '',
     width: 1600,
     height: 1000,

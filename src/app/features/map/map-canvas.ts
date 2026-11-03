@@ -11,24 +11,40 @@ import {
   viewChild,
 } from '@angular/core';
 import Konva from 'konva';
-import { MapState, MapToken } from '../../core/models/map';
+import { MapEvent, MapState, MapToken } from '../../core/models/map';
 import {
   cellAt,
   cellKey,
   gridDimensions,
+  HealthStatus,
+  healthStatus,
+  RANGE_SQUARES,
+  rangeForSquares,
   snapToGrid,
+  squaresBetween,
   Viewer,
   visibleTokens,
 } from '../../core/rules/map';
+import { playAttack } from './map-effects';
 
-export type MapTool = 'move' | 'reveal' | 'hide';
+export type MapTool = 'move' | 'reveal' | 'hide' | 'ruler' | 'attack';
 
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 5;
+/** How long a ruler line stays on screen. */
+const RULER_MS = 5000;
+/** Events older than this are not replayed when a screen opens. */
+const EVENT_FRESH_MS = 8000;
+const STATUS_ICON: Record<Exclude<HealthStatus, 'ok'>, string> = {
+  wounded: '🩸',
+  critical: '💀',
+  down: '✖',
+};
 
 /**
  * Konva stage for the battle map, shared by the GM editor and the TV view.
- * The GM sees hidden tokens (faded) and a translucent fog; the TV gets opaque fog and no hidden tokens.
+ * The GM sees hidden tokens (faded), exact HP pips and a translucent fog; the TV gets opaque fog,
+ * no hidden tokens and only coarse health symbols.
  */
 @Component({
   selector: 'app-map-canvas',
@@ -45,19 +61,28 @@ export class MapCanvas {
   readonly image = input('');
   readonly viewer = input<Viewer>('gm');
   readonly tool = input<MapTool>('move');
-  /** characterId → portrait data URL. */
+  /** characterId / npcId → portrait data URL. */
   readonly portraits = input<Record<string, string>>({});
+  /** characterId / npcId → HP. */
+  readonly health = input<Record<string, { marked: number; max: number }>>({});
   readonly selectedId = input('');
+  /** Draw the Daggerheart range bands around the selected token (GM). */
+  readonly showRanges = input(false);
 
   readonly tokenMoved = output<{ id: string; x: number; y: number }>();
   readonly tokenSelected = output<string>();
   readonly fogPainted = output<{ cells: string[]; reveal: boolean }>();
+  readonly rulerDone = output<{ from: { x: number; y: number }; to: { x: number; y: number } }>();
+  /** In the attack tool, the token tapped as the target. */
+  readonly attackTarget = output<string>();
 
   private readonly host = viewChild.required<ElementRef<HTMLDivElement>>('host');
   private stage?: Konva.Stage;
   private readonly base = new Konva.Layer({ listening: false });
   private readonly fog = new Konva.Layer({ listening: false });
+  private readonly overlay = new Konva.Layer({ listening: false });
   private readonly tokens = new Konva.Layer();
+  private readonly fx = new Konva.Layer({ listening: false });
   private readonly preview = new Konva.Layer({ listening: false });
   private img?: HTMLImageElement;
   private imgSrc = '';
@@ -65,6 +90,9 @@ export class MapCanvas {
   private dragging = false;
   private stroke = new Set<string>();
   private painting = false;
+  private rulerStart: { x: number; y: number } | null = null;
+  private rulerTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastEventId = '';
   private lastPinch: { dist: number; center: { x: number; y: number } } | null = null;
   private readonly portraitCache = new Map<string, HTMLImageElement>();
 
@@ -79,14 +107,15 @@ export class MapCanvas {
       });
       this.stage.add(this.base);
       // GM: fog under tokens so hidden things stay workable; TV: fog on top hides everything below it.
-      if (this.viewer() === 'gm') this.stage.add(this.fog, this.tokens);
-      else this.stage.add(this.tokens, this.fog);
-      this.stage.add(this.preview);
+      if (this.viewer() === 'gm') this.stage.add(this.fog, this.overlay, this.tokens);
+      else this.stage.add(this.overlay, this.tokens, this.fog);
+      this.stage.add(this.fx, this.preview);
       this.bindInput();
       const ro = new ResizeObserver(() => this.resize());
       ro.observe(el);
       destroyRef.onDestroy(() => {
         ro.disconnect();
+        clearTimeout(this.rulerTimer);
         this.stage?.destroy();
       });
       this.redraw();
@@ -96,10 +125,22 @@ export class MapCanvas {
     effect(() => {
       this.state();
       this.portraits();
+      this.health();
       this.selectedId();
+      this.showRanges();
       this.loadImage(this.image());
       this.syncTool(this.tool());
       this.redraw();
+    });
+
+    // Play broadcast events (ruler lines, attack animations) once each.
+    effect(() => {
+      const ev = this.state().lastEvent;
+      if (!ev || ev.id === this.lastEventId || !this.stage) return;
+      const first = this.lastEventId === '';
+      this.lastEventId = ev.id;
+      if (first && Date.now() - ev.at > EVENT_FRESH_MS) return;
+      this.play(ev);
     });
   }
 
@@ -123,6 +164,12 @@ export class MapCanvas {
     this.zoomAt({ x: stage.width() / 2, y: stage.height() / 2 }, stage.scaleX() * factor);
   }
 
+  /** Plays an event locally (the GM page calls this right away; the TV gets it from Firestore). */
+  play(ev: MapEvent): void {
+    if (ev.type === 'ruler') this.drawRuler(ev.from, ev.to, true);
+    else playAttack(this.fx, ev, this.state().grid.size);
+  }
+
   // ---------- Drawing ----------
 
   private redraw(): void {
@@ -135,6 +182,7 @@ export class MapCanvas {
     }
     this.drawBase(s);
     this.drawFog(s);
+    this.drawOverlay(s);
     if (!this.dragging) this.drawTokens(s);
   }
 
@@ -202,6 +250,58 @@ export class MapCanvas {
     this.fog.batchDraw();
   }
 
+  /** Range bands around the selected token: squares, since a diagonal step counts as one. */
+  private drawOverlay(s: MapState): void {
+    this.overlay.destroyChildren();
+    const t = s.tokens[this.selectedId()];
+    if (this.viewer() === 'gm' && this.showRanges() && t) {
+      const g = s.grid;
+      const { col, row } = cellAt(g, t.x, t.y);
+      for (const band of [...RANGE_SQUARES].reverse()) {
+        const n = band.squares;
+        const x = g.offsetX + (col - n) * g.size;
+        const y = g.offsetY + (row - n) * g.size;
+        const side = (2 * n + 1) * g.size;
+        this.overlay.add(
+          new Konva.Rect({
+            x,
+            y,
+            width: side,
+            height: side,
+            stroke: band.color,
+            strokeWidth: 2,
+            dash: [10, 6],
+            fill: band.color,
+            opacity: 0.12,
+            strokeScaleEnabled: false,
+          }),
+          new Konva.Rect({
+            x,
+            y,
+            width: side,
+            height: side,
+            stroke: band.color,
+            strokeWidth: 2,
+            dash: [10, 6],
+            strokeScaleEnabled: false,
+            opacity: 0.9,
+          }),
+          new Konva.Text({
+            x: x + 4,
+            y: y + 4,
+            text: band.label,
+            fontSize: Math.max(12, g.size / 4),
+            fontStyle: 'bold',
+            fill: band.color,
+            shadowColor: '#000',
+            shadowBlur: 4,
+          }),
+        );
+      }
+    }
+    this.overlay.batchDraw();
+  }
+
   private drawTokens(s: MapState): void {
     this.tokens.destroyChildren();
     const gm = this.viewer() === 'gm';
@@ -214,12 +314,15 @@ export class MapCanvas {
   private tokenNode(t: MapToken, s: MapState, gm: boolean): Konva.Group {
     const r = (t.size * s.grid.size) / 2 - 3;
     const selected = this.selectedId() === t.id;
+    const hp = t.refId ? this.health()[t.refId] : undefined;
+    const status = healthStatus(hp);
     const group = new Konva.Group({
       x: t.x,
       y: t.y,
       draggable: gm && this.tool() === 'move',
-      opacity: t.hidden ? 0.5 : 1,
+      opacity: t.hidden ? 0.5 : status === 'down' ? 0.55 : 1,
       name: 'token',
+      id: t.id,
     });
     const portrait = t.refId ? this.portraits()[t.refId] : '';
     const pic = portrait ? this.portraitImage(portrait) : undefined;
@@ -255,29 +358,76 @@ export class MapCanvas {
         shadowOpacity: 0.7,
       }),
     );
-    group.add(
-      new Konva.Label({ y: r + 2 }).add(
-        new Konva.Tag({
-          fill: 'rgba(15,12,24,0.8)',
-          cornerRadius: 4,
-          pointerDirection: 'up',
-          pointerWidth: 6,
-          pointerHeight: 4,
-        }),
-        new Konva.Text({
-          text: t.label,
-          fontSize: Math.max(11, s.grid.size / 5),
-          fill: '#fff',
-          padding: 3,
-        }),
-      ),
+
+    // GM: exact HP as pips around the top of the token.
+    if (gm && hp && hp.max > 0) this.addHpPips(group, hp, r);
+    // Everyone: a coarse status symbol instead of numbers.
+    if (status !== 'ok') {
+      if (status === 'down') {
+        group.add(
+          new Konva.Line({
+            points: [-r * 0.7, -r * 0.7, r * 0.7, r * 0.7],
+            stroke: '#e5484d',
+            strokeWidth: Math.max(3, r / 5),
+            lineCap: 'round',
+          }),
+        );
+        group.add(
+          new Konva.Line({
+            points: [r * 0.7, -r * 0.7, -r * 0.7, r * 0.7],
+            stroke: '#e5484d',
+            strokeWidth: Math.max(3, r / 5),
+            lineCap: 'round',
+          }),
+        );
+      } else {
+        const size = Math.max(14, r * 0.7);
+        group.add(
+          new Konva.Circle({
+            x: r * 0.75,
+            y: -r * 0.75,
+            radius: size * 0.62,
+            fill: 'rgba(15,12,24,0.85)',
+            stroke: status === 'critical' ? '#e5484d' : '#f5b83d',
+            strokeWidth: 2,
+          }),
+          new Konva.Text({
+            x: r * 0.75 - size / 2,
+            y: -r * 0.75 - size / 2,
+            width: size,
+            height: size,
+            text: STATUS_ICON[status],
+            fontSize: size * 0.75,
+            align: 'center',
+            verticalAlign: 'middle',
+          }),
+        );
+      }
+    }
+
+    const label = new Konva.Label({ y: r + 2 }).add(
+      new Konva.Tag({
+        fill: 'rgba(15,12,24,0.8)',
+        cornerRadius: 4,
+        pointerDirection: 'up',
+        pointerWidth: 6,
+        pointerHeight: 4,
+      }),
+      new Konva.Text({
+        text: t.label,
+        fontSize: Math.max(11, s.grid.size / 5),
+        fill: '#fff',
+        padding: 3,
+      }),
     );
-    // Center the label under the token.
-    const label = group.findOne<Konva.Label>('Label');
-    if (label) label.x(-label.width() / 2);
+    group.add(label);
+    label.x(-label.width() / 2);
 
     if (gm) {
-      group.on('pointerdown', () => this.tokenSelected.emit(t.id));
+      group.on('pointerdown', () => {
+        if (this.tool() === 'attack') this.attackTarget.emit(t.id);
+        else this.tokenSelected.emit(t.id);
+      });
       group.on('dragstart', () => {
         this.dragging = true;
         group.moveToTop();
@@ -290,6 +440,109 @@ export class MapCanvas {
       });
     }
     return group;
+  }
+
+  /** Up to 12 pips on an arc over the token; bigger pools fall back to a bar. */
+  private addHpPips(group: Konva.Group, hp: { marked: number; max: number }, r: number): void {
+    if (hp.max > 12) {
+      const w = r * 1.6;
+      group.add(
+        new Konva.Rect({
+          x: -w / 2,
+          y: -r - 10,
+          width: w,
+          height: 6,
+          fill: 'rgba(15,12,24,0.85)',
+          cornerRadius: 3,
+        }),
+        new Konva.Rect({
+          x: -w / 2,
+          y: -r - 10,
+          width: w * (1 - hp.marked / hp.max),
+          height: 6,
+          fill: '#3fae5a',
+          cornerRadius: 3,
+        }),
+      );
+      return;
+    }
+    const spread = Math.min(Math.PI * 0.9, hp.max * 0.22);
+    const pip = Math.max(3, Math.min(6, r / 6));
+    for (let i = 0; i < hp.max; i++) {
+      const a =
+        -Math.PI / 2 - spread / 2 + (hp.max === 1 ? spread / 2 : (spread * i) / (hp.max - 1));
+      const marked = i >= hp.max - hp.marked;
+      group.add(
+        new Konva.Circle({
+          x: Math.cos(a) * (r + pip + 2),
+          y: Math.sin(a) * (r + pip + 2),
+          radius: pip,
+          fill: marked ? '#2a1d2a' : '#e5484d',
+          stroke: '#0f0c18',
+          strokeWidth: 1.5,
+        }),
+      );
+    }
+  }
+
+  private drawRuler(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    temporary: boolean,
+  ): void {
+    clearTimeout(this.rulerTimer);
+    const s = this.state();
+    const squares = squaresBetween(s.grid, from, to);
+    const range = rangeForSquares(squares);
+    const color = RANGE_SQUARES.find((b) => b.id === range.id)?.color ?? '#a59cba';
+    const a = snapToGrid(s.grid, from.x, from.y);
+    const b = snapToGrid(s.grid, to.x, to.y);
+    const size = Math.max(14, s.grid.size / 3.2);
+    this.preview.destroyChildren();
+    this.preview.add(
+      new Konva.Line({
+        points: [a.x, a.y, b.x, b.y],
+        stroke: '#000',
+        strokeWidth: 7,
+        opacity: 0.5,
+        lineCap: 'round',
+        strokeScaleEnabled: false,
+      }),
+      new Konva.Line({
+        points: [a.x, a.y, b.x, b.y],
+        stroke: color,
+        strokeWidth: 4,
+        dash: [12, 8],
+        lineCap: 'round',
+        strokeScaleEnabled: false,
+      }),
+      new Konva.Circle({ x: a.x, y: a.y, radius: 6, fill: color }),
+      new Konva.Circle({ x: b.x, y: b.y, radius: 6, fill: color }),
+    );
+    const label = new Konva.Label({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - size }).add(
+      new Konva.Tag({
+        fill: 'rgba(15,12,24,0.92)',
+        stroke: color,
+        strokeWidth: 2,
+        cornerRadius: 6,
+      }),
+      new Konva.Text({
+        text: `${squares} ${squares === 1 ? 'quadrado' : 'quadrados'} · ${range.label}`,
+        fontSize: size,
+        fontStyle: 'bold',
+        fill: '#fff',
+        padding: 6,
+      }),
+    );
+    label.offsetX(label.width() / 2);
+    this.preview.add(label);
+    this.preview.batchDraw();
+    if (temporary) {
+      this.rulerTimer = setTimeout(() => {
+        this.preview.destroyChildren();
+        this.preview.batchDraw();
+      }, RULER_MS);
+    }
   }
 
   private portraitImage(src: string): HTMLImageElement | undefined {
@@ -320,7 +573,7 @@ export class MapCanvas {
   // ---------- Input ----------
 
   private syncTool(tool: MapTool): void {
-    this.stage?.draggable(this.viewer() === 'gm' && tool === 'move');
+    this.stage?.draggable(this.viewer() === 'gm' && (tool === 'move' || tool === 'attack'));
   }
 
   private resize(): void {
@@ -377,21 +630,36 @@ export class MapCanvas {
       this.syncTool(this.tool());
     });
 
-    // Fog brush.
     stage.on('pointerdown', (e) => {
-      if (this.tool() === 'move') {
+      const tool = this.tool();
+      if (tool === 'move' || tool === 'attack') {
         if (e.target === stage || e.target.getLayer() === this.base) this.tokenSelected.emit('');
         return;
       }
       if ((e.evt as PointerEvent).isPrimary === false) return;
+      const pos = stage.getRelativePointerPosition();
+      if (tool === 'ruler') {
+        if (pos) this.rulerStart = pos;
+        return;
+      }
       this.painting = true;
       this.stroke.clear();
       this.paintAtPointer();
     });
     stage.on('pointermove', () => {
       if (this.painting) this.paintAtPointer();
+      const pos = stage.getRelativePointerPosition();
+      if (this.rulerStart && pos) this.drawRuler(this.rulerStart, pos, false);
     });
     const finish = () => {
+      if (this.rulerStart) {
+        const pos = stage.getRelativePointerPosition();
+        if (pos) {
+          this.drawRuler(this.rulerStart, pos, true);
+          this.rulerDone.emit({ from: this.rulerStart, to: pos });
+        }
+        this.rulerStart = null;
+      }
       if (!this.painting) return;
       this.painting = false;
       this.preview.destroyChildren();

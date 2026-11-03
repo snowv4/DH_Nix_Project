@@ -18,7 +18,13 @@ import { MapCanvas } from './map-canvas';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="relative h-dvh w-full cursor-none bg-black">
-      <app-map-canvas viewer="tv" [state]="state()" [image]="image()" [portraits]="portraits()" />
+      <app-map-canvas
+        viewer="tv"
+        [state]="state()"
+        [image]="image()"
+        [portraits]="portraits()"
+        [health]="health()"
+      />
       @if (!state().imageId) {
         <p class="absolute inset-0 grid place-items-center font-display text-2xl text-muted">
           Aguardando o mestre…
@@ -30,12 +36,16 @@ import { MapCanvas } from './map-canvas';
 export class TvPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly maps = inject(MapRepository);
-  protected readonly state = this.maps.watchState(this.destroyRef);
+  private readonly activeId = this.maps.watchActiveId(this.destroyRef);
+  protected readonly state = this.maps.watchMap(this.activeId, inject(Injector));
   private readonly characters = inject(CharacterRepository).watchAll(this.destroyRef);
   protected readonly image = this.maps.watchCurrentImage(this.state, inject(Injector));
   private readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
   /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
     Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.portraitUrl])),
+  );
+  protected readonly health = computed(() =>
+    Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.hp])),
   );
 }

@@ -32,6 +32,8 @@ describe('firestore.rules', () => {
     'campaigns/nix/drafts/lyra',
     'campaigns/nix/cardArt/book-of-ava',
     'campaigns/nix/map/state',
+    'campaigns/nix/map/active',
+    'campaigns/nix/maps/abc',
     'campaigns/nix/mapImages/abc',
     'campaigns/nix/npcs/goblin',
     'campaigns/nix/characters/kote/sessionNotes/p1',

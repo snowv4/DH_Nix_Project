@@ -93,3 +93,45 @@ export function freeSpawnPoint(state: MapState): { x: number; y: number } {
   }
   return snapToGrid(g, state.width / 2, state.height / 2);
 }
+
+// ---------- Ranges (SRD "Optional Rule: Defined Ranges", p. 51) ----------
+
+export type RangeId = 'melee' | 'veryClose' | 'close' | 'far' | 'veryFar';
+
+/** Max squares for each range band; Very Far is anything beyond Far. */
+export const RANGE_SQUARES: { id: RangeId; label: string; squares: number; color: string }[] = [
+  { id: 'melee', label: 'Corpo a corpo', squares: 1, color: '#e5484d' },
+  { id: 'veryClose', label: 'Muito Perto', squares: 3, color: '#f5b83d' },
+  { id: 'close', label: 'Perto', squares: 6, color: '#3fae5a' },
+  { id: 'far', label: 'Longe', squares: 12, color: '#4fb3d9' },
+];
+
+/** Squares between two cells; a diagonal step counts as one square. */
+export function squaresBetween(
+  grid: MapGrid,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): number {
+  const ca = cellAt(grid, a.x, a.y);
+  const cb = cellAt(grid, b.x, b.y);
+  return Math.max(Math.abs(ca.col - cb.col), Math.abs(ca.row - cb.row));
+}
+
+export function rangeForSquares(squares: number): { id: RangeId; label: string } {
+  const band = RANGE_SQUARES.find((r) => squares <= r.squares);
+  return band ? { id: band.id, label: band.label } : { id: 'veryFar', label: 'Muito Longe' };
+}
+
+// ---------- Health markers ----------
+
+export type HealthStatus = 'ok' | 'wounded' | 'critical' | 'down';
+
+/** Coarse status shown on the TV instead of numbers: half marked = wounded, 1 left = critical. */
+export function healthStatus(hp: { marked: number; max: number } | undefined): HealthStatus {
+  if (!hp || hp.max <= 0) return 'ok';
+  const left = hp.max - hp.marked;
+  if (left <= 0) return 'down';
+  if (left === 1) return 'critical';
+  if (hp.marked * 2 >= hp.max) return 'wounded';
+  return 'ok';
+}

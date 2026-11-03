@@ -253,9 +253,12 @@ Botão "Subir de nível" (o mestre libera ou o jogador aciona). Passos:
 ### 4.7 Mapa de combate
 - Upload de imagem de mapa; grade quadrada opcional (tamanho ajustável, alinhar com a imagem).
 - **Tokens**: PJs (com retrato) e adversários; arrastar; zoom/pan com mouse e pinça no touch.
-- Jogador pode mover **só o próprio token**; mestre move tudo.
+- Só o mestre move tokens (os jogadores falam com o mestre).
 - Tokens podem ser **ocultos** (só o mestre vê).
-- Régua simples / indicação de alcance do Daggerheart (Corpo a corpo, Muito Perto, Perto, Longe, Muito Longe — conferir).
+- Régua e alcances pela regra opcional de alcances definidos do SRD: Corpo a corpo 1, Muito Perto 3, Perto 6, Longe 12, Muito Longe 13+ quadrados (diagonal conta 1). Escala ajustável por "quadrados na largura".
+- Vários mapas salvos; o mestre prepara um enquanto outro está na TV.
+- Marcadores de PV nos tokens: mestre vê pontinhos; TV vê só símbolos (🩸 ferido, 💀 crítico, ✖ caído).
+- Animações de ataque (corte, impacto, perfuração; flecha e elementos à distância), transmitidas à TV via `lastEvent`.
 - Estado do mapa sincronizado em tempo real.
 
 ### 4.8 Tela de TV
@@ -324,11 +327,15 @@ campaigns/{campaignId}/npcs/{id}                  // fichas de NPC/adversário (
   name, type (tipo de adversário do SRD ou '' p/ NPC social), tier, difficulty, thresholds, hp, stress,
   attack { modifier, name, range, damage }, experiences, features, description, motives, notes, tags, portraitUrl
 
-campaigns/{campaignId}/map/state                 // documento único, ao vivo (mestre e TV)
-  imageId, width, height
+campaigns/{campaignId}/maps/{mapId}               // biblioteca de mapas salvos (ao vivo no mestre e na TV)
+  name, imageId, width, height
   grid: { size, offsetX, offsetY, show }
   fog: { enabled, revealed: ["col,row"] }          // névoa por quadrado; na TV é opaca
   tokens: { [tokenId]: { kind: 'pc'|'monster', refId, label, color, x, y, size, hidden } }
+  lastEvent?: { id, type: 'ruler'|'attack', from{x,y}, to{x,y}, effect, at }  // régua/animação transmitida à TV
+
+campaigns/{campaignId}/map/active                 // { mapId } — qual mapa a TV mostra
+                                                  // (o antigo map/state é migrado para maps/ no 1º acesso)
 
 campaigns/{campaignId}/mapImages/{id}            // imagem do mapa (data URL, até 1600 px) separada do estado
 ```

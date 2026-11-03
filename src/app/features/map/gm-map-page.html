@@ -2,90 +2,211 @@
 <div class="flex h-dvh flex-col bg-ink lg:flex-row">
   <!-- Map -->
   <div class="relative min-h-0 flex-1">
-    <app-map-canvas
-      [state]="s"
-      [image]="image()"
-      viewer="gm"
-      [tool]="tool()"
-      [portraits]="portraits()"
-      [selectedId]="selectedId()"
-      (tokenMoved)="onTokenMoved($event)"
-      (tokenSelected)="selectedId.set($event)"
-      (fogPainted)="onFogPainted($event)"
-    />
+    @if (mapId()) {
+      <app-map-canvas
+        [state]="s"
+        [image]="image()"
+        viewer="gm"
+        [tool]="tool()"
+        [portraits]="portraits()"
+        [health]="health()"
+        [selectedId]="selectedId()"
+        [showRanges]="showRanges()"
+        (tokenMoved)="onTokenMoved($event)"
+        (tokenSelected)="selectedId.set($event)"
+        (fogPainted)="onFogPainted($event)"
+        (rulerDone)="onRuler($event)"
+        (attackTarget)="onAttackTarget($event)"
+      />
+    }
 
     <!-- Top bar -->
     <div class="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-2">
       <a class="btn-ghost pointer-events-auto bg-ink/80" routerLink="/mestre">← Painel</a>
+      @if (mapId()) {
+        <span class="pointer-events-auto min-w-0 truncate rounded-xl bg-ink/80 px-3 py-2 text-sm">
+          {{ s.name }}
+          @if (isActive()) {
+            <span class="ml-1 text-xs text-hope">● na TV</span>
+          } @else {
+            <button
+              type="button"
+              class="ml-1 text-xs text-fear underline"
+              (click)="activate(mapId())"
+            >
+              mostrar na TV
+            </button>
+          }
+        </span>
+      }
       <div class="flex-1"></div>
       <button type="button" class="btn-fear pointer-events-auto" (click)="openTv()">
-        📺 Abrir TV
+        📺<span class="max-sm:sr-only">&ngsp;Abrir TV</span>
       </button>
     </div>
 
-    <!-- Tool + zoom bar -->
-    <div class="absolute inset-x-0 bottom-2 flex justify-center px-2">
-      <div
-        class="flex max-w-full gap-0.5 rounded-2xl border border-line bg-ink/90 p-1 shadow-xl backdrop-blur sm:gap-1"
-        role="toolbar"
-        aria-label="Ferramentas do mapa"
+    @if (tool() === 'attack') {
+      <p
+        class="absolute inset-x-0 top-16 mx-auto w-fit rounded-xl bg-fear/90 px-4 py-2 text-sm text-white shadow-xl"
       >
-        <button
-          type="button"
-          class="btn min-h-11 px-3 text-sm"
-          [class]="tool() === 'move' ? 'bg-hope text-ink' : 'text-muted'"
-          [attr.aria-pressed]="tool() === 'move'"
-          (click)="tool.set('move')"
-        >
-          ✋<span class="max-sm:sr-only">&ngsp;Mover</span>
-        </button>
-        <button
-          type="button"
-          class="btn min-h-11 px-3 text-sm"
-          [class]="tool() === 'reveal' ? 'bg-hope text-ink' : 'text-muted'"
-          [attr.aria-pressed]="tool() === 'reveal'"
-          [disabled]="!s.fog.enabled"
-          (click)="tool.set('reveal')"
-        >
-          ☀<span class="max-sm:sr-only">&ngsp;Revelar</span>
-        </button>
-        <button
-          type="button"
-          class="btn min-h-11 px-3 text-sm"
-          [class]="tool() === 'hide' ? 'bg-fear text-white' : 'text-muted'"
-          [attr.aria-pressed]="tool() === 'hide'"
-          [disabled]="!s.fog.enabled"
-          (click)="tool.set('hide')"
-        >
-          ☁<span class="max-sm:sr-only">&ngsp;Névoa</span>
-        </button>
-        <span class="mx-1 w-px bg-line"></span>
-        <button
-          type="button"
-          class="btn size-11 p-0 text-lg text-muted"
-          aria-label="Afastar"
-          (click)="zoom(0.8)"
-        >
-          −
-        </button>
-        <button
-          type="button"
-          class="btn size-11 p-0 text-lg text-muted"
-          aria-label="Aproximar"
-          (click)="zoom(1.25)"
-        >
-          +
-        </button>
-        <button type="button" class="btn min-h-11 px-2 text-sm text-muted" (click)="fit()">
-          Ajustar
-        </button>
-      </div>
-    </div>
+        ⚔ {{ tokenLabel(selectedId()) }} ataca… toque no alvo.
+        <button type="button" class="ml-2 underline" (click)="cancelAttack()">cancelar</button>
+      </p>
+    }
 
-    @if (!s.imageId) {
+    <!-- Effect picker -->
+    @if (pendingAttack(); as pa) {
+      <div
+        class="absolute inset-0 z-20 grid place-items-center bg-ink/60 p-3"
+        role="dialog"
+        aria-label="Escolher animação"
+      >
+        <div class="card w-full max-w-md">
+          <p class="label">{{ tokenLabel(pa.from) }} → {{ tokenLabel(pa.to) }}</p>
+          <p class="mt-3 text-xs text-muted">Corpo a corpo</p>
+          <div class="mt-1 grid grid-cols-3 gap-2">
+            @for (e of meleeEffects; track e.id) {
+              <button
+                type="button"
+                class="btn-ghost h-auto flex-col py-2 text-sm"
+                (click)="playEffect(e.id)"
+              >
+                <span class="text-2xl">{{ e.icon }}</span
+                >{{ e.label }}
+              </button>
+            }
+          </div>
+          <p class="mt-3 text-xs text-muted">À distância</p>
+          <div class="mt-1 grid grid-cols-4 gap-2">
+            @for (e of rangedEffects; track e.id) {
+              <button
+                type="button"
+                class="btn-ghost h-auto flex-col px-1 py-2 text-xs"
+                (click)="playEffect(e.id)"
+              >
+                <span class="text-2xl">{{ e.icon }}</span
+                >{{ e.label }}
+              </button>
+            }
+          </div>
+          <button type="button" class="btn mt-3 w-full text-muted" (click)="cancelAttack()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Tool + zoom bar -->
+    @if (mapId()) {
+      <div class="absolute inset-x-0 bottom-2 flex justify-center px-2">
+        <div
+          class="flex max-w-full gap-0.5 overflow-x-auto rounded-2xl border border-line bg-ink/90 p-1 shadow-xl backdrop-blur sm:gap-1"
+          role="toolbar"
+          aria-label="Ferramentas do mapa"
+        >
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-3 text-sm"
+            [class]="tool() === 'move' ? 'bg-hope text-ink' : 'text-muted'"
+            [attr.aria-pressed]="tool() === 'move'"
+            (click)="tool.set('move')"
+          >
+            ✋<span class="max-sm:sr-only">&ngsp;Mover</span>
+          </button>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-3 text-sm"
+            [class]="tool() === 'ruler' ? 'bg-hope text-ink' : 'text-muted'"
+            [attr.aria-pressed]="tool() === 'ruler'"
+            (click)="tool.set('ruler')"
+          >
+            📏<span class="max-sm:sr-only">&ngsp;Régua</span>
+          </button>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-3 text-sm"
+            [class]="tool() === 'attack' ? 'bg-fear text-white' : 'text-muted'"
+            [disabled]="!selected()"
+            [attr.aria-pressed]="tool() === 'attack'"
+            (click)="startAttack()"
+            title="Selecione o atacante primeiro"
+          >
+            ⚔<span class="max-sm:sr-only">&ngsp;Atacar</span>
+          </button>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-3 text-sm"
+            [class]="tool() === 'reveal' ? 'bg-hope text-ink' : 'text-muted'"
+            [attr.aria-pressed]="tool() === 'reveal'"
+            [disabled]="!s.fog.enabled"
+            (click)="tool.set('reveal')"
+          >
+            ☀<span class="max-sm:sr-only">&ngsp;Revelar</span>
+          </button>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-3 text-sm"
+            [class]="tool() === 'hide' ? 'bg-fear text-white' : 'text-muted'"
+            [attr.aria-pressed]="tool() === 'hide'"
+            [disabled]="!s.fog.enabled"
+            (click)="tool.set('hide')"
+          >
+            ☁<span class="max-sm:sr-only">&ngsp;Névoa</span>
+          </button>
+          <span class="mx-1 w-px shrink-0 bg-line"></span>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-2 text-sm"
+            [class]="showRanges() ? 'text-hope' : 'text-muted'"
+            [attr.aria-pressed]="showRanges()"
+            (click)="showRanges.set(!showRanges())"
+            title="Mostrar alcances do token selecionado"
+          >
+            ◎
+          </button>
+          <button
+            type="button"
+            class="btn size-11 shrink-0 p-0 text-lg text-muted"
+            aria-label="Afastar"
+            (click)="zoom(0.8)"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            class="btn size-11 shrink-0 p-0 text-lg text-muted"
+            aria-label="Aproximar"
+            (click)="zoom(1.25)"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            class="btn min-h-11 shrink-0 px-2 text-sm text-muted"
+            aria-label="Ajustar à tela"
+            (click)="fit()"
+          >
+            ⤢<span class="max-sm:sr-only">&ngsp;Ajustar</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (activeId() === undefined) {
+      <p class="absolute inset-0 grid place-items-center text-muted">Abrindo mapas…</p>
+    } @else if (!mapId()) {
+      <div class="absolute inset-0 grid place-items-center p-6 text-center">
+        <div class="card max-w-xs">
+          <p class="text-sm text-muted">Nenhum mapa ainda.</p>
+          <button type="button" class="btn-hope mt-3 w-full" (click)="newMap()">
+            + Criar o primeiro mapa
+          </button>
+        </div>
+      </div>
+    } @else if (!s.imageId) {
       <div class="pointer-events-none absolute inset-0 grid place-items-center p-6 text-center">
         <p class="max-w-xs rounded-xl bg-ink/80 p-4 text-sm text-muted">
-          Envie a imagem do mapa na aba <strong class="text-white">Mapa</strong> do painel.
+          Envie a imagem deste mapa na aba <strong class="text-white">Grade</strong> do painel.
         </p>
       </div>
     }
@@ -96,26 +217,18 @@
     class="flex max-h-[45dvh] flex-col border-t border-line bg-panel lg:max-h-none lg:w-80 lg:border-t-0 lg:border-l"
   >
     <div class="flex gap-1 border-b border-line p-1" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        class="btn flex-1 text-sm"
-        [class]="panel() === 'tokens' ? 'bg-panel-2 text-hope' : 'text-muted'"
-        [attr.aria-selected]="panel() === 'tokens'"
-        (click)="panel.set('tokens')"
-      >
-        Tokens
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="btn flex-1 text-sm"
-        [class]="panel() === 'map' ? 'bg-panel-2 text-hope' : 'text-muted'"
-        [attr.aria-selected]="panel() === 'map'"
-        (click)="panel.set('map')"
-      >
-        Mapa, grade e névoa
-      </button>
+      @for (t of panelTabs; track t.id) {
+        <button
+          type="button"
+          role="tab"
+          class="btn flex-1 px-1 text-sm"
+          [class]="panel() === t.id ? 'bg-panel-2 text-hope' : 'text-muted'"
+          [attr.aria-selected]="panel() === t.id"
+          (click)="panel.set(t.id)"
+        >
+          {{ t.label }}
+        </button>
+      }
     </div>
 
     <div class="flex flex-col gap-4 overflow-y-auto p-3">
@@ -123,201 +236,308 @@
         <p class="rounded-lg bg-hp/15 px-3 py-2 text-sm text-hp" role="alert">{{ error() }}</p>
       }
 
-      @if (panel() === 'tokens') {
-        @if (selected(); as t) {
-          <section class="card flex flex-col gap-2 !border-hope/60">
-            <div class="flex items-center justify-between gap-2">
-              <h2 class="label text-hope">Selecionado</h2>
-              <button
-                type="button"
-                class="btn min-h-9 px-2 text-xs text-muted"
-                (click)="selectedId.set('')"
-              >
-                Fechar
-              </button>
-            </div>
-            <label class="flex flex-col gap-1 text-sm">
-              Nome
-              <input
-                class="field"
-                [value]="t.label"
-                (change)="updateSelected({ label: value($event) })"
-              />
-            </label>
-            <div class="flex items-center gap-2 text-sm">
-              Tamanho:
-              @for (n of [1, 2, 3]; track n) {
+      @switch (panel()) {
+        @case ('tokens') {
+          @if (selected(); as t) {
+            <section class="card flex flex-col gap-2 !border-hope/60">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="label text-hope">Selecionado</h2>
                 <button
                   type="button"
-                  class="btn-ghost min-h-9 px-3 text-sm"
-                  [class.!border-hope]="t.size === n"
-                  (click)="updateSelected({ size: n })"
+                  class="btn min-h-9 px-2 text-xs text-muted"
+                  (click)="selectedId.set('')"
                 >
-                  {{ n }}×{{ n }}
+                  Fechar
                 </button>
+              </div>
+              <label class="flex flex-col gap-1 text-sm">
+                Nome
+                <input
+                  class="field"
+                  [value]="t.label"
+                  (change)="updateSelected({ label: value($event) })"
+                />
+              </label>
+              <div class="flex items-center gap-2 text-sm">
+                Tamanho:
+                @for (n of [1, 2, 3]; track n) {
+                  <button
+                    type="button"
+                    class="btn-ghost min-h-9 px-3 text-sm"
+                    [class.!border-hope]="t.size === n"
+                    (click)="updateSelected({ size: n })"
+                  >
+                    {{ n }}×{{ n }}
+                  </button>
+                }
+              </div>
+              <button
+                type="button"
+                class="btn-ghost text-sm"
+                [class.!border-fear]="t.hidden"
+                (click)="updateSelected({ hidden: !t.hidden })"
+              >
+                {{ t.hidden ? '🙈 Oculto da TV — mostrar' : '👁 Visível na TV — ocultar' }}
+              </button>
+              <button type="button" class="btn-fear text-sm" (click)="startAttack()">
+                ⚔ Atacar com {{ t.label }}
+              </button>
+              <button type="button" class="btn text-sm text-hp" (click)="removeSelected()">
+                Remover do mapa
+              </button>
+            </section>
+          }
+
+          <section class="flex flex-col gap-2">
+            <h2 class="label">Adicionar personagem</h2>
+            <select class="field" (change)="addPc($event)" [disabled]="!missingPcs().length">
+              <option value="">
+                {{ missingPcs().length ? 'Escolha um PJ…' : 'Todos os PJs já estão no mapa' }}
+              </option>
+              @for (c of missingPcs(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </section>
+
+          <section class="flex flex-col gap-2">
+            <h2 class="label">Adicionar NPC</h2>
+            <select class="field" (change)="addNpc($event)" [disabled]="!npcList().length">
+              <option value="">
+                {{
+                  npcList().length
+                    ? 'Escolha um NPC (entra oculto)…'
+                    : 'Crie NPCs no painel do mestre'
+                }}
+              </option>
+              @for (n of npcList(); track n.id) {
+                <option [value]="n.id">{{ n.name }}</option>
+              }
+            </select>
+          </section>
+
+          <section class="flex flex-col gap-2">
+            <h2 class="label">Monstro rápido</h2>
+            <div class="flex gap-2">
+              <input
+                class="field min-w-0 flex-1"
+                placeholder="Ex.: Goblin 1"
+                [value]="monsterName()"
+                (input)="monsterName.set(value($event))"
+                (keydown.enter)="addMonster()"
+              />
+              <button type="button" class="btn-fear shrink-0" (click)="addMonster()">
+                Adicionar
+              </button>
+            </div>
+            <div class="flex gap-1.5" role="group" aria-label="Cor do monstro">
+              @for (col of colors; track col) {
+                <button
+                  type="button"
+                  class="size-9 rounded-full border-2"
+                  [style.background]="col"
+                  [class]="monsterColor() === col ? 'border-white' : 'border-transparent'"
+                  [attr.aria-label]="'Cor ' + col"
+                  (click)="monsterColor.set(col)"
+                ></button>
               }
             </div>
-            <button
-              type="button"
-              class="btn-ghost text-sm"
-              [class.!border-fear]="t.hidden"
-              (click)="updateSelected({ hidden: !t.hidden })"
-            >
-              {{ t.hidden ? '🙈 Oculto da TV — mostrar' : '👁 Visível na TV — ocultar' }}
-            </button>
-            <button type="button" class="btn text-sm text-hp" (click)="removeSelected()">
-              Remover do mapa
-            </button>
+          </section>
+
+          <section class="flex flex-col gap-1">
+            <h2 class="label">Neste mapa ({{ tokenList().length }})</h2>
+            @for (t of tokenList(); track t.id) {
+              <button
+                type="button"
+                class="flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-panel-2"
+                [class.bg-panel-2]="selectedId() === t.id"
+                (click)="selectedId.set(t.id)"
+              >
+                <span class="size-4 shrink-0 rounded-full" [style.background]="t.color"></span>
+                <span class="flex-1 truncate">{{ t.label }}</span>
+                @if (t.hidden) {
+                  <span class="text-xs text-fear">oculto</span>
+                }
+              </button>
+            } @empty {
+              <p class="text-sm text-muted">Nenhum token ainda.</p>
+            }
           </section>
         }
 
-        <section class="flex flex-col gap-2">
-          <h2 class="label">Adicionar personagem</h2>
-          <select class="field" (change)="addPc($event)" [disabled]="!missingPcs().length">
-            <option value="">
-              {{ missingPcs().length ? 'Escolha um PJ…' : 'Todos os PJs já estão no mapa' }}
-            </option>
-            @for (c of missingPcs(); track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </section>
+        @case ('map') {
+          <section class="flex flex-col gap-2">
+            <h2 class="label">Imagem do mapa</h2>
+            <label class="btn-hope cursor-pointer" [class.opacity-50]="busy() || !mapId()">
+              {{ busy() ? 'Enviando…' : s.imageId ? 'Trocar imagem' : 'Enviar imagem' }}
+              <input
+                class="sr-only"
+                type="file"
+                accept="image/*"
+                [disabled]="busy() || !mapId()"
+                (change)="uploadMap($event)"
+              />
+            </label>
+            <p class="text-xs text-muted">Até 1600 px. Trocar a imagem limpa a névoa.</p>
+          </section>
 
-        <section class="flex flex-col gap-2">
-          <h2 class="label">Adicionar monstro</h2>
-          <div class="flex gap-2">
-            <input
-              class="field min-w-0 flex-1"
-              placeholder="Ex.: Goblin 1"
-              [value]="monsterName()"
-              (input)="monsterName.set(value($event))"
-              (keydown.enter)="addMonster()"
-            />
-            <button type="button" class="btn-fear shrink-0" (click)="addMonster()">
-              Adicionar
-            </button>
-          </div>
-          <div class="flex gap-1.5" role="group" aria-label="Cor do monstro">
-            @for (col of colors; track col) {
+          <section class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <h2 class="label">Grade e escala</h2>
               <button
                 type="button"
-                class="size-9 rounded-full border-2"
-                [style.background]="col"
-                [class]="monsterColor() === col ? 'border-white' : 'border-transparent'"
-                [attr.aria-label]="'Cor ' + col"
-                (click)="monsterColor.set(col)"
-              ></button>
-            }
-          </div>
-          <p class="text-xs text-muted">
-            Monstros entram ocultos da TV — mostre quando quiser revelar.
-          </p>
-        </section>
-
-        <section class="flex flex-col gap-1">
-          <h2 class="label">No mapa ({{ tokenList().length }})</h2>
-          @for (t of tokenList(); track t.id) {
-            <button
-              type="button"
-              class="flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-panel-2"
-              [class.bg-panel-2]="selectedId() === t.id"
-              (click)="selectedId.set(t.id)"
-            >
-              <span class="size-4 shrink-0 rounded-full" [style.background]="t.color"></span>
-              <span class="flex-1 truncate">{{ t.label }}</span>
-              @if (t.hidden) {
-                <span class="text-xs text-fear">oculto</span>
-              }
-            </button>
-          } @empty {
-            <p class="text-sm text-muted">Nenhum token ainda.</p>
-          }
-        </section>
-      } @else {
-        <section class="flex flex-col gap-2">
-          <h2 class="label">Imagem do mapa</h2>
-          <label class="btn-hope cursor-pointer" [class.opacity-50]="busy()">
-            {{ busy() ? 'Enviando…' : s.imageId ? 'Trocar imagem' : 'Enviar imagem' }}
-            <input
-              class="sr-only"
-              type="file"
-              accept="image/*"
-              [disabled]="busy()"
-              (change)="uploadMap($event)"
-            />
-          </label>
-          <p class="text-xs text-muted">
-            A imagem é reduzida para até 1600 px. Trocar a imagem limpa a névoa.
-          </p>
-        </section>
-
-        <section class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <h2 class="label">Grade</h2>
-            <button
-              type="button"
-              class="btn-ghost min-h-9 px-3 text-sm"
-              (click)="setGrid({ show: !s.grid.show })"
-            >
-              {{ s.grid.show ? 'Esconder' : 'Mostrar' }}
-            </button>
-          </div>
-          @for (row of gridRows; track row.key) {
-            <div class="flex items-center gap-2 text-sm">
-              <span class="flex-1 text-muted">{{ row.label }}</span>
-              <button
-                type="button"
-                class="btn-ghost size-10 p-0"
-                [attr.aria-label]="row.label + ' menos'"
-                (click)="stepGrid(row.key, -row.step)"
+                class="btn-ghost min-h-9 px-3 text-sm"
+                (click)="setGrid({ show: !s.grid.show })"
               >
-                −
-              </button>
-              <span class="w-12 text-center tabular-nums">{{ s.grid[row.key] }}</span>
-              <button
-                type="button"
-                class="btn-ghost size-10 p-0"
-                [attr.aria-label]="row.label + ' mais'"
-                (click)="stepGrid(row.key, row.step)"
-              >
-                +
+                {{ s.grid.show ? 'Esconder' : 'Mostrar' }}
               </button>
             </div>
-          }
-          <p class="text-xs text-muted">
-            Ajuste até as linhas baterem com os quadrados desenhados no mapa.
-          </p>
-        </section>
-
-        <section class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <h2 class="label">Névoa de guerra</h2>
-            <button
-              type="button"
-              class="btn min-h-9 px-3 text-sm"
-              [class]="s.fog.enabled ? 'bg-fear text-white' : 'btn-ghost'"
-              [attr.aria-pressed]="s.fog.enabled"
-              (click)="toggleFog()"
-            >
-              {{ s.fog.enabled ? 'Ligada' : 'Desligada' }}
-            </button>
-          </div>
-          @if (s.fog.enabled) {
+            <label class="flex items-center gap-2 text-sm">
+              <span class="flex-1 text-muted">Quadrados na largura</span>
+              <input
+                class="field w-20 text-center"
+                type="number"
+                inputmode="numeric"
+                min="2"
+                max="200"
+                [value]="squaresWide()"
+                (change)="setSquaresWide($event)"
+              />
+            </label>
+            @for (row of gridRows; track row.key) {
+              <div class="flex items-center gap-2 text-sm">
+                <span class="flex-1 text-muted">{{ row.label }}</span>
+                <button
+                  type="button"
+                  class="btn-ghost size-10 p-0"
+                  [attr.aria-label]="row.label + ' menos'"
+                  (click)="stepGrid(row.key, -row.step)"
+                >
+                  −
+                </button>
+                <span class="w-12 text-center tabular-nums">{{ s.grid[row.key] }}</span>
+                <button
+                  type="button"
+                  class="btn-ghost size-10 p-0"
+                  [attr.aria-label]="row.label + ' mais'"
+                  (click)="stepGrid(row.key, row.step)"
+                >
+                  +
+                </button>
+              </div>
+            }
             <p class="text-xs text-muted">
-              Use <strong class="text-white">☀&ngsp;Revelar</strong> e
-              <strong class="text-white">☁&ngsp;Névoa</strong> na barra de baixo e pinte os
-              quadrados. Na TV, a névoa é opaca.
+              Alcances (SRD): Corpo a corpo 1 quadrado · Muito Perto 3 · Perto 6 · Longe 12 · Muito
+              Longe 13+. Ajuste a grade até bater com os quadrados do desenho.
             </p>
-            <div class="grid grid-cols-2 gap-2">
-              <button type="button" class="btn-ghost text-sm" (click)="revealAll()">
-                Revelar tudo
-              </button>
-              <button type="button" class="btn-ghost text-sm" (click)="hideAll()">
-                Cobrir tudo
+          </section>
+
+          <section class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <h2 class="label">Névoa de guerra</h2>
+              <button
+                type="button"
+                class="btn min-h-9 px-3 text-sm"
+                [class]="s.fog.enabled ? 'bg-fear text-white' : 'btn-ghost'"
+                [attr.aria-pressed]="s.fog.enabled"
+                (click)="toggleFog()"
+              >
+                {{ s.fog.enabled ? 'Ligada' : 'Desligada' }}
               </button>
             </div>
-          }
-        </section>
+            @if (s.fog.enabled) {
+              <p class="text-xs text-muted">
+                Use ☀ Revelar e ☁ Névoa na barra de baixo e pinte os quadrados. Na TV, a névoa é
+                opaca.
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" class="btn-ghost text-sm" (click)="revealAll()">
+                  Revelar tudo
+                </button>
+                <button type="button" class="btn-ghost text-sm" (click)="hideAll()">
+                  Cobrir tudo
+                </button>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('library') {
+          <button type="button" class="btn-hope" (click)="newMap()">+ Novo mapa</button>
+          <ul class="flex flex-col gap-2">
+            @for (m of mapList(); track m.id) {
+              <li
+                class="rounded-xl border bg-panel-2 p-2"
+                [class]="m.id === mapId() ? 'border-hope' : 'border-line'"
+              >
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="min-w-0 flex-1 truncate text-left font-semibold"
+                    (click)="openMap(m.id)"
+                  >
+                    {{ m.name }}
+                  </button>
+                  @if (m.id === activeId()) {
+                    <span
+                      class="shrink-0 rounded-full bg-hope px-2 py-0.5 text-[0.7rem] font-bold text-ink"
+                      >na TV</span
+                    >
+                  }
+                </div>
+                <p class="text-xs text-muted">
+                  {{ m.tokenCount }} tokens{{ m.imageId ? '' : ' · sem imagem' }}
+                </p>
+                <div class="mt-1 flex flex-wrap gap-1">
+                  @if (m.id !== mapId()) {
+                    <button
+                      type="button"
+                      class="btn min-h-9 px-2 text-xs text-muted"
+                      (click)="openMap(m.id)"
+                    >
+                      Abrir
+                    </button>
+                  }
+                  @if (m.id !== activeId()) {
+                    <button
+                      type="button"
+                      class="btn min-h-9 px-2 text-xs text-hope"
+                      (click)="activate(m.id)"
+                    >
+                      Mostrar na TV
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn min-h-9 px-2 text-xs text-muted"
+                    (click)="rename(m.id, m.name)"
+                  >
+                    Renomear
+                  </button>
+                  <button
+                    type="button"
+                    class="btn min-h-9 px-2 text-xs text-muted"
+                    (click)="duplicate(m.id, m.name)"
+                  >
+                    Duplicar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn min-h-9 px-2 text-xs text-muted hover:text-hp"
+                    (click)="removeMap(m.id, m.name)"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </li>
+            } @empty {
+              <li class="text-sm text-muted">Nenhum mapa salvo.</li>
+            }
+          </ul>
+          <p class="text-xs text-muted">
+            Você pode abrir e preparar um mapa sem tirar o atual da TV.
+          </p>
+        }
       }
     </div>
   </aside>

@@ -4,8 +4,11 @@ import {
   cellKey,
   freeSpawnPoint,
   gridDimensions,
+  healthStatus,
   paintFog,
+  rangeForSquares,
   snapToGrid,
+  squaresBetween,
   visibleTokens,
 } from './map';
 
@@ -91,5 +94,35 @@ describe('freeSpawnPoint', () => {
     expect(first).toEqual({ x: 250, y: 250 });
     const second = freeSpawnPoint({ ...base, tokens: { a: token({ id: 'a', ...first }) } });
     expect(second).not.toEqual(first);
+  });
+});
+
+describe('ranges', () => {
+  const grid = { size: 10, offsetX: 0, offsetY: 0, show: true };
+
+  it('counts squares with diagonals as one', () => {
+    expect(squaresBetween(grid, { x: 5, y: 5 }, { x: 35, y: 25 })).toBe(3);
+  });
+
+  it('maps squares to the SRD defined ranges', () => {
+    expect([1, 2, 3, 6, 7, 12, 13].map((n) => rangeForSquares(n).label)).toEqual([
+      'Corpo a corpo',
+      'Muito Perto',
+      'Muito Perto',
+      'Perto',
+      'Longe',
+      'Longe',
+      'Muito Longe',
+    ]);
+  });
+});
+
+describe('healthStatus', () => {
+  it('turns HP into coarse markers', () => {
+    expect(healthStatus({ marked: 0, max: 6 })).toBe('ok');
+    expect(healthStatus({ marked: 3, max: 6 })).toBe('wounded');
+    expect(healthStatus({ marked: 5, max: 6 })).toBe('critical');
+    expect(healthStatus({ marked: 6, max: 6 })).toBe('down');
+    expect(healthStatus({ marked: 0, max: 0 })).toBe('ok');
   });
 });

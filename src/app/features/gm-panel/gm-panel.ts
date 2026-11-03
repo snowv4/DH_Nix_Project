@@ -105,19 +105,22 @@ export class GmPanel {
 
   /** Adds the NPC as a (hidden) token on the battle map, using its portrait. */
   protected async npcToMap(n: Npc): Promise<void> {
-    const state = await this.maps.readState();
-    const id = `npc-${n.id}-${Date.now().toString(36)}`;
-    await this.maps.upsertToken({
-      id,
+    const active = await this.maps.readActive();
+    if (!active) {
+      this.npcMessage.set('Crie um mapa no Mapa de combate primeiro.');
+      return;
+    }
+    await this.maps.upsertToken(active.id, {
+      id: `npc-${n.id}-${Date.now().toString(36)}`,
       kind: 'monster',
       refId: n.id,
       label: n.name,
       color: '#8b5cf6',
-      ...freeSpawnPoint(state),
+      ...freeSpawnPoint(active.state),
       size: 1,
       hidden: true,
     });
-    this.npcMessage.set(`${n.name} entrou no mapa (oculto da TV).`);
+    this.npcMessage.set(`${n.name} entrou no mapa “${active.state.name}” (oculto da TV).`);
   }
 
   private openNpc(n: Npc): void {
