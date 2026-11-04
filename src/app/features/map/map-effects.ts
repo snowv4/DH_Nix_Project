@@ -561,7 +561,7 @@ export function playDamage(layer: Konva.Layer, ev: MapEvent, cell: number): void
       if (r.down)
         setTimeout(
           () =>
-            floatText(layer, { x: at.x, y: at.y + size * 0.2 }, size, '💀 Caiu!', '#ffffff', 1.4),
+            floatText(layer, { x: at.x, y: at.y + size * 1.9 }, size, '💀 Caiu!', '#ffffff', 1.4),
           450,
         );
     }, wait);

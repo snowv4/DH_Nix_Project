@@ -105,6 +105,8 @@ export class MapCanvas {
   private rulerTimer: ReturnType<typeof setTimeout> | undefined;
   private lastEventId = '';
   private readonly walks = new Map<string, Walk>();
+  /** Token under a pointer that is still pressed (survives redraws). */
+  private pressedId = '';
   /** Last stored position drawn per token, to notice moves. */
   private readonly lastTarget = new Map<string, { x: number; y: number }>();
   private lastPinch: { dist: number; center: { x: number; y: number } } | null = null;
@@ -331,6 +333,8 @@ export class MapCanvas {
       const w = this.walks.get(t.id);
       if (w) node.position(walkFrame(w, now, s.grid.size));
       this.tokens.add(node);
+      // Selecting a token redraws the layer; if the finger is still down on it, keep the drag going.
+      if (gm && this.pressedId === t.id && node.draggable()) node.startDrag();
     }
     this.tokens.batchDraw();
     if (this.walks.size) this.walkAnim.start();
@@ -497,6 +501,7 @@ export class MapCanvas {
 
     if (gm) {
       group.on('pointerdown', () => {
+        this.pressedId = t.id;
         if (this.tool() === 'attack') this.attackTarget.emit(t.id);
         else this.tokenSelected.emit(t.id);
       });
@@ -760,6 +765,7 @@ export class MapCanvas {
       if (this.rulerStart && pos) this.drawRuler(this.rulerStart, pos, false);
     });
     const finish = () => {
+      this.pressedId = '';
       if (this.rulerStart) {
         const pos = stage.getRelativePointerPosition();
         if (pos) {
