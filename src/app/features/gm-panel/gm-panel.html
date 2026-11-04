@@ -6,9 +6,21 @@
         {{ campaign().name }}
       </span>
     </h1>
+    <button
+      type="button"
+      class="btn-ghost"
+      [attr.aria-expanded]="settingsOpen()"
+      (click)="settingsOpen.set(!settingsOpen())"
+    >
+      ⚙ Mesa
+    </button>
     <a class="btn-ghost" routerLink="/mestre/mapa">🗺️ Mapa de combate</a>
     <button type="button" class="btn-ghost" (click)="logout()">Sair</button>
   </header>
+
+  @if (settingsOpen()) {
+    <app-table-settings [name]="campaign().name" (closed)="settingsOpen.set(false)" />
+  }
 
   <!-- Fear -->
   <section class="card flex flex-wrap items-center gap-4 border-fear/50" aria-label="Medo">

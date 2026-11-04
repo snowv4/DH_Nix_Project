@@ -1,12 +1,15 @@
 import { DestroyRef, inject, Injectable, Signal } from '@angular/core';
 import {
   collection,
+  CollectionReference,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   onSnapshot,
   runTransaction,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { isGmPin, tablePinHash } from '../auth/pin';
 import { DEFAULT_TABLE_ID, TableService } from '../auth/table.service';
@@ -83,6 +86,45 @@ export class CampaignRepository {
     const hash = (await getDoc(doc(this.db, 'campaigns', id))).data()?.['gmPinHash'] as
       string | undefined;
     return hash ? hash === (await tablePinHash(id, pin)) : isGmPin(pin);
+  }
+
+  async renameTable(name: string): Promise<void> {
+    const clean = name.trim().slice(0, 40);
+    if (clean) await setDoc(this.campaignRef, { name: clean }, { merge: true });
+  }
+
+  async setGmPin(pin: string): Promise<void> {
+    await setDoc(
+      this.campaignRef,
+      { gmPinHash: await tablePinHash(this.table.id(), pin) },
+      { merge: true },
+    );
+  }
+
+  /**
+   * Deletes the current table and everything under it (Firestore doesn't delete subcollections
+   * on its own). Mesa Nix can't be deleted from the app.
+   */
+  async deleteTable(): Promise<void> {
+    const id = this.table.id();
+    if (id === DEFAULT_TABLE_ID) throw new Error('Mesa Nix não pode ser excluída.');
+    const sub = (...path: string[]) => collection(this.db, 'campaigns', id, ...path);
+    const characters = await getDocs(sub('characters'));
+    for (const c of characters.docs) await this.deleteAll(sub('characters', c.id, 'sessionNotes'));
+    for (const name of ['characters', 'drafts', 'npcs', 'maps', 'map', 'mapImages', 'cardArt']) {
+      await this.deleteAll(sub(name));
+    }
+    await deleteDoc(doc(this.db, 'campaigns', id));
+  }
+
+  /** Deletes every doc of a collection in batches (Firestore allows 500 writes per batch). */
+  private async deleteAll(ref: CollectionReference): Promise<void> {
+    const docs = (await getDocs(ref)).docs.map((d) => d.ref);
+    for (let i = 0; i < docs.length; i += 400) {
+      const batch = writeBatch(this.db);
+      docs.slice(i, i + 400).forEach((d) => batch.delete(d));
+      await batch.commit();
+    }
   }
 
   /** GM releases a level for the whole table (1–10). */

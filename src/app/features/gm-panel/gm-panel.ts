@@ -33,9 +33,11 @@ const VIEW_KEY = 'dh-nix.gm-view';
 
 import { ConditionView, conditionViews } from '../../core/rules/conditions';
 
+import { TableSettings } from './table-settings';
+
 @Component({
   selector: 'app-gm-panel',
-  imports: [RouterLink, NpcCard],
+  imports: [RouterLink, NpcCard, TableSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-panel.html',
 })
@@ -50,6 +52,7 @@ export class GmPanel {
   private readonly drafts = inject(DraftRepository);
   protected readonly characters = this.characterRepo.watchAll(this.destroyRef);
   protected readonly campaign = this.campaignRepo.watchCampaign(this.destroyRef);
+  protected readonly settingsOpen = signal(false);
   protected readonly view = signal<View>(readView());
   protected readonly fearSlots = Array.from({ length: MAX_FEAR }, (_, i) => i);
   protected readonly maxFear = MAX_FEAR;
