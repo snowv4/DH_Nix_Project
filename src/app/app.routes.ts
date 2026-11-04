@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { creationGuard, gmGuard, sheetGuard } from './core/auth/guards';
+import { creationGuard, gmGuard, tvTableGuard, sheetGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage) },
@@ -26,7 +26,7 @@ export const routes: Routes = [
   },
   {
     path: 'tv',
-    canActivate: [gmGuard],
+    canActivate: [tvTableGuard, gmGuard],
     loadComponent: () => import('./features/map/tv-page').then((m) => m.TvPage),
   },
   {

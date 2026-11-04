@@ -274,6 +274,8 @@ Botão "Subir de nível" (o mestre libera ou o jogador aciona). Passos:
 
 ## 5. Modelo de dados (Firestore)
 
+> **Mesas:** cada mesa é um documento `campaigns/{mesaId}` (`name`, `gmPinHash`, `fear`, `levelUnlocked`). A mesa original é `campaigns/nix` ("Mesa Nix", PIN original). O login escolhe a mesa (guardada no aparelho) e todos os caminhos abaixo usam o id dela; a sessão de mestre/jogador vale só para a mesa em que foi aberta. A TV aceita `/tv?mesa=<id>`.
+
 ```
 users/{uid}
   displayName, photoURL, createdAt

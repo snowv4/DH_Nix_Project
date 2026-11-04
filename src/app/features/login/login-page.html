@@ -1,4 +1,4 @@
-<main class="bg relative grid min-h-dvh place-items-center px-4 py-10">
+<main class="bg relative grid min-h-dvh place-items-center px-4 pt-10 pb-36">
   <!-- Put your art at public/images/login-bg.jpg; inline url() resolves against <base href>. -->
   <div
     class="absolute inset-0 bg-cover bg-center opacity-60"
@@ -26,11 +26,20 @@
       </h1>
       <p class="mt-1 text-[0.65rem] font-semibold tracking-[0.45em] text-muted">COMPATIBLE</p>
     </div>
-    <p class="mt-2 text-center font-display text-sm tracking-widest text-hope/90">Mesa Nix</p>
+    <p class="mt-2 text-center font-display text-sm tracking-widest text-hope/90">
+      {{ tableName() }}
+    </p>
 
     @switch (step()) {
       @case ('pick') {
         <form class="mt-6 flex flex-col gap-3" [formGroup]="pickForm" (ngSubmit)="submitPick()">
+          <label for="table" class="label">Mesa</label>
+          <select id="table" class="field" [value]="tableId()" (change)="switchTable($event)">
+            @for (t of tables(); track t.id) {
+              <option [value]="t.id" [selected]="t.id === tableId()">{{ t.name }}</option>
+            }
+            <option value="__new">+ Criar nova mesa…</option>
+          </select>
           <label for="pick" class="label">Quem é você?</label>
           <select id="pick" class="field" formControlName="pick" [attr.aria-busy]="loading()">
             <option value="" disabled>
@@ -104,6 +113,36 @@
             Abrir ficha
           </button>
           <button type="button" class="btn-ghost" (click)="goTo('pick')">Voltar</button>
+        </form>
+      }
+      @case ('table') {
+        <form class="mt-6 flex flex-col gap-3" [formGroup]="tableForm" (ngSubmit)="createTable()">
+          <label for="table-name" class="label">Nome da nova mesa</label>
+          <input
+            id="table-name"
+            class="field"
+            formControlName="tableName"
+            placeholder="Ex.: Mesa de sexta"
+            autocomplete="off"
+            maxlength="40"
+          />
+          <label for="table-pin" class="label">PIN do mestre desta mesa</label>
+          <input
+            id="table-pin"
+            class="field text-center text-2xl tracking-[0.5em]"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="8"
+            formControlName="tablePin"
+          />
+          <p class="text-xs text-muted">
+            De 4 a 8 números. Cada mesa tem seus próprios personagens, NPCs, mapas e Medo.
+          </p>
+          <button type="submit" class="btn-hope mt-1" [disabled]="busy() || tableForm.invalid">
+            {{ busy() ? 'Criando…' : 'Criar mesa' }}
+          </button>
+          <button type="button" class="btn text-muted" (click)="goTo('pick')">Voltar</button>
         </form>
       }
       @case ('create') {

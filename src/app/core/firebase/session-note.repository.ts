@@ -1,7 +1,7 @@
 import { DestroyRef, inject, Injectable, Signal } from '@angular/core';
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { SessionNote } from '../models/session-note';
-import { CAMPAIGN_ID } from './campaign.repository';
+import { TableService } from '../auth/table.service';
 import { FirebaseService } from './firebase.service';
 import { snapshotSignal } from './snapshot-signal';
 
@@ -9,9 +9,17 @@ import { snapshotSignal } from './snapshot-signal';
 @Injectable({ providedIn: 'root' })
 export class SessionNoteRepository {
   private readonly db = inject(FirebaseService).db;
+  private readonly table = inject(TableService);
 
   private ref(characterId: string) {
-    return collection(this.db, 'campaigns', CAMPAIGN_ID, 'characters', characterId, 'sessionNotes');
+    return collection(
+      this.db,
+      'campaigns',
+      this.table.id(),
+      'characters',
+      characterId,
+      'sessionNotes',
+    );
   }
 
   watch(characterId: string, destroyRef: DestroyRef): Signal<SessionNote[] | undefined> {

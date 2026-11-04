@@ -22,7 +22,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { emptyMapState, MapEvent, MapGrid, MapInfo, MapState, MapToken } from '../models/map';
-import { CAMPAIGN_ID } from './campaign.repository';
+import { TableService } from '../auth/table.service';
 import { FirebaseService } from './firebase.service';
 import { snapshotSignal } from './snapshot-signal';
 
@@ -33,11 +33,20 @@ import { snapshotSignal } from './snapshot-signal';
 @Injectable({ providedIn: 'root' })
 export class MapRepository {
   private readonly db = inject(FirebaseService).db;
-  private readonly mapsRef = collection(this.db, 'campaigns', CAMPAIGN_ID, 'maps');
-  private readonly activeRef = doc(this.db, 'campaigns', CAMPAIGN_ID, 'map', 'active');
+  private readonly table = inject(TableService);
+  private get mapsRef() {
+    return collection(this.db, 'campaigns', this.table.id(), 'maps');
+  }
+  private get activeRef() {
+    return doc(this.db, 'campaigns', this.table.id(), 'map', 'active');
+  }
   /** Single-map location used before the library existed; migrated on first read. */
-  private readonly legacyRef = doc(this.db, 'campaigns', CAMPAIGN_ID, 'map', 'state');
-  private readonly imagesRef = collection(this.db, 'campaigns', CAMPAIGN_ID, 'mapImages');
+  private get legacyRef() {
+    return doc(this.db, 'campaigns', this.table.id(), 'map', 'state');
+  }
+  private get imagesRef() {
+    return collection(this.db, 'campaigns', this.table.id(), 'mapImages');
+  }
 
   // ---------- Library ----------
 

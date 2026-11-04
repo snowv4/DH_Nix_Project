@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { isGmPin, sheetPinHash } from '../../core/auth/pin';
+import { sheetPinHash } from '../../core/auth/pin';
+import { TableService } from '../../core/auth/table.service';
+import { CampaignRepository, TableEntry } from '../../core/firebase/campaign.repository';
 import { SessionService } from '../../core/auth/session.service';
 import { CharacterRepository } from '../../core/firebase/character.repository';
 import { DraftRepository } from '../../core/firebase/draft.repository';
@@ -9,7 +18,7 @@ import { FirebaseService } from '../../core/firebase/firebase.service';
 import { characterIdFromName, createBlankCharacter } from '../../core/rules/character';
 import { LicenseNotice } from '../../shared/ui/license-notice';
 
-type Step = 'pick' | 'pin' | 'create' | 'sheetPin';
+type Step = 'pick' | 'pin' | 'create' | 'sheetPin' | 'table';
 
 /** Dropdown values: `char:<id>`, `draft:<id>` or `gm`. */
 const GM_OPTION = 'gm';
@@ -33,6 +42,8 @@ export class LoginPage implements OnInit {
   private readonly drafts = inject(DraftRepository);
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly table = inject(TableService);
+  private readonly campaigns = inject(CampaignRepository);
 
   protected readonly step = signal<Step>('pick');
   protected readonly busy = signal(false);
@@ -63,6 +74,18 @@ export class LoginPage implements OnInit {
     validators: [Validators.required],
   });
   protected readonly sheetPinForm = new FormGroup({ sheetPin: this.sheetPin });
+  protected readonly tableForm = new FormGroup({
+    tableName: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    tablePin: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^\d{4,8}$/)],
+    }),
+  });
+  protected readonly tables = signal<TableEntry[]>([]);
+  protected readonly tableId = this.table.id;
+  protected readonly tableName = computed(
+    () => this.tables().find((t) => t.id === this.tableId())?.name ?? 'Mesa Nix',
+  );
   /** Character waiting for its PIN. */
   protected readonly locked = signal<Entry | null>(null);
 
@@ -106,7 +129,7 @@ export class LoginPage implements OnInit {
 
   protected async submitPin(): Promise<void> {
     await this.run(async () => {
-      if (!(await isGmPin(this.pin.value))) {
+      if (!(await this.campaigns.checkGmPin(this.pin.value))) {
         this.error.set('PIN incorreto.');
         this.pin.reset();
         return;
@@ -149,6 +172,33 @@ export class LoginPage implements OnInit {
     });
   }
 
+  /** Changing table logs out and reloads the lists for the new one. */
+  protected switchTable(e: Event): void {
+    const el = e.target as HTMLSelectElement;
+    if (el.value === '__new') {
+      el.value = this.tableId();
+      this.tableForm.reset();
+      this.goTo('table');
+      return;
+    }
+    this.table.select(el.value);
+    this.session.end();
+    this.pick.reset();
+    void this.loadList();
+  }
+
+  protected async createTable(): Promise<void> {
+    const { tableName, tablePin } = this.tableForm.getRawValue();
+    await this.run(async () => {
+      const id = await this.campaigns.createTable(tableName, tablePin);
+      this.table.select(id);
+      this.session.end();
+      this.pick.reset();
+      this.goTo('pick');
+      await this.loadList();
+    });
+  }
+
   protected goTo(step: Step): void {
     this.error.set('');
     this.pin.reset();
@@ -158,10 +208,12 @@ export class LoginPage implements OnInit {
   private async loadList(): Promise<void> {
     this.loading.set(true);
     await this.run(async () => {
-      const [chars, drafts] = await Promise.all([
+      const [chars, drafts, tables] = await Promise.all([
         this.characters.listNames(),
         this.drafts.listNames(),
+        this.campaigns.listTables(),
       ]);
+      this.tables.set(tables);
       this.characterList.set(chars);
       // A finished character supersedes a leftover draft with the same id.
       this.draftList.set(drafts.filter((d) => !chars.some((c) => c.id === d.id)));

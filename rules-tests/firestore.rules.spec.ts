@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 let env: RulesTestEnvironment;
@@ -34,6 +34,8 @@ describe('firestore.rules', () => {
     'campaigns/nix/map/state',
     'campaigns/nix/map/active',
     'campaigns/nix/maps/abc',
+    'campaigns/mesa-de-sexta',
+    'campaigns/mesa-de-sexta/characters/lyra',
     'campaigns/nix/mapImages/abc',
     'campaigns/nix/npcs/goblin',
     'campaigns/nix/characters/kote/sessionNotes/p1',
@@ -65,6 +67,13 @@ describe('firestore.rules', () => {
         doc(env.authenticatedContext('anon-uid').firestore(), 'campaigns/nix/characters/teste'),
       ),
     );
+  });
+
+  it('lets signed-in visitors list tables, but not anonymous requests', async () => {
+    await assertSucceeds(
+      getDocs(collection(env.authenticatedContext('anon-uid').firestore(), 'campaigns')),
+    );
+    await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(), 'campaigns')));
   });
 
   it('denies everything outside campaigns', async () => {

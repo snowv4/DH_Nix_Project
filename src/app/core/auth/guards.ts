@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { CharacterRepository } from '../firebase/character.repository';
 import { FirebaseService } from '../firebase/firebase.service';
 import { SessionService } from './session.service';
+import { TableService } from './table.service';
 
 export const gmGuard: CanActivateFn = async () => {
   const session = inject(SessionService).session();
@@ -36,4 +37,12 @@ export const creationGuard: CanActivateFn = async (route) => {
   if (!allowed) return router.parseUrl('/');
   await firebase.ensureSignedIn();
   return (await characters.exists(id)) ? router.createUrlTree(['/ficha', id]) : true;
+};
+
+/** `/tv?mesa=<id>`: a TV on another device picks the table from the link. */
+export const tvTableGuard: CanActivateFn = async (route) => {
+  const mesa = route.queryParamMap.get('mesa');
+  if (mesa) inject(TableService).select(mesa);
+  await inject(FirebaseService).ensureSignedIn();
+  return true;
 };

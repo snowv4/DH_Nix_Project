@@ -1,14 +1,17 @@
 import { inject, Injectable } from '@angular/core';
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { CreationDraft } from '../models/creation';
-import { CAMPAIGN_ID } from './campaign.repository';
+import { TableService } from '../auth/table.service';
 import { FirebaseService } from './firebase.service';
 
 /** Creation-wizard drafts, one per character id, so players can stop and resume later. */
 @Injectable({ providedIn: 'root' })
 export class DraftRepository {
   private readonly db = inject(FirebaseService).db;
-  private readonly draftsRef = collection(this.db, 'campaigns', CAMPAIGN_ID, 'drafts');
+  private readonly table = inject(TableService);
+  private get draftsRef() {
+    return collection(this.db, 'campaigns', this.table.id(), 'drafts');
+  }
 
   async load(id: string): Promise<CreationDraft | null> {
     const snap = await getDoc(doc(this.draftsRef, id));

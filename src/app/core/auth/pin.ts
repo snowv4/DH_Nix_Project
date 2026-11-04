@@ -15,3 +15,8 @@ export async function isGmPin(pin: string): Promise<boolean> {
 export function sheetPinHash(characterId: string, pin: string): Promise<string> {
   return sha256Hex(`${characterId}:${pin.trim()}`);
 }
+
+/** GM PIN hash of a table created in the app, salted with the table id. */
+export function tablePinHash(tableId: string, pin: string): Promise<string> {
+  return sha256Hex(`table:${tableId}:${pin.trim()}`);
+}

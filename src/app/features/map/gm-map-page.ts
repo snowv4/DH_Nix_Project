@@ -36,6 +36,8 @@ const MAP_MAX_SIZE = 1600;
 /** `/mestre/mapa` — GM battle map editor: map library, grid, fog, tokens, ruler (spec 4.7). */
 type PanelTab = 'tokens' | 'map' | 'library';
 
+import { TableService } from '../../core/auth/table.service';
+
 @Component({
   selector: 'app-gm-map-page',
   imports: [MapCanvas, RouterLink, IconPicker, TokenSheet, DamageDialog],
@@ -64,6 +66,7 @@ export class GmMapPage {
   protected readonly characters = this.characterRepo.watchAll(this.destroyRef);
   protected readonly npcs = this.npcRepo.watchAll(this.destroyRef);
   private readonly dialog = inject(Dialog);
+  private readonly table = inject(TableService);
   /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
     Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.portraitUrl])),
@@ -482,7 +485,12 @@ export class GmMapPage {
   }
 
   protected openTv(): void {
-    window.open('tv', 'dh-nix-tv', 'popup,width=1280,height=720');
+    // ?mesa= lets the same link open the right table on another device (smart TV, laptop).
+    window.open(
+      `tv?mesa=${encodeURIComponent(this.table.id())}`,
+      'dh-nix-tv',
+      'popup,width=1280,height=720',
+    );
   }
 
   protected value(e: Event): string {

@@ -12,14 +12,17 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { Character, CharacterPatch } from '../models/character';
-import { CAMPAIGN_ID } from './campaign.repository';
+import { TableService } from '../auth/table.service';
 import { FirebaseService } from './firebase.service';
 import { snapshotSignal } from './snapshot-signal';
 
 @Injectable({ providedIn: 'root' })
 export class CharacterRepository {
   private readonly db = inject(FirebaseService).db;
-  private readonly charactersRef = collection(this.db, 'campaigns', CAMPAIGN_ID, 'characters');
+  private readonly table = inject(TableService);
+  private get charactersRef() {
+    return collection(this.db, 'campaigns', this.table.id(), 'characters');
+  }
 
   async exists(id: string): Promise<boolean> {
     return (await getDoc(doc(this.charactersRef, id))).exists();

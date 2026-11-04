@@ -10,7 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { Npc } from '../models/npc';
-import { CAMPAIGN_ID } from './campaign.repository';
+import { TableService } from '../auth/table.service';
 import { FirebaseService } from './firebase.service';
 import { snapshotSignal } from './snapshot-signal';
 
@@ -18,7 +18,10 @@ import { snapshotSignal } from './snapshot-signal';
 @Injectable({ providedIn: 'root' })
 export class NpcRepository {
   private readonly db = inject(FirebaseService).db;
-  private readonly npcsRef = collection(this.db, 'campaigns', CAMPAIGN_ID, 'npcs');
+  private readonly table = inject(TableService);
+  private get npcsRef() {
+    return collection(this.db, 'campaigns', this.table.id(), 'npcs');
+  }
 
   watchAll(destroyRef: DestroyRef): Signal<Npc[]> {
     return snapshotSignal<Npc[]>(
