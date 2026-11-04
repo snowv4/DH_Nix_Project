@@ -135,3 +135,60 @@ export function healthStatus(hp: { marked: number; max: number } | undefined): H
   if (hp.marked * 2 >= hp.max) return 'wounded';
   return 'ok';
 }
+
+// ---------- Walking animation ----------
+
+/** A token walking from one point to another (image pixels, times in ms). */
+export interface Walk {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  start: number;
+  duration: number;
+  /** Footsteps over the whole path; each one is a little hop with a tilt. */
+  steps: number;
+}
+
+export interface WalkFrame {
+  x: number;
+  y: number;
+  /** Upward offset of the hop, in pixels. */
+  lift: number;
+  /** Tilt in degrees, alternating left/right each step. */
+  tilt: number;
+  done: boolean;
+}
+
+/** ~4.5 squares per second, at least 2 steps, between 0.3 s and 2.2 s. */
+export function createWalk(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  cell: number,
+  start: number,
+): Walk {
+  const squares = Math.hypot(to.x - from.x, to.y - from.y) / Math.max(cell, 1);
+  return {
+    from,
+    to,
+    start,
+    duration: Math.min(2200, Math.max(300, squares * 220)),
+    steps: Math.max(2, Math.round(squares * 2)),
+  };
+}
+
+/** Where the walking token is at `now`. With reduced motion it just slides. */
+export function walkFrame(w: Walk, now: number, cell: number, reducedMotion = false): WalkFrame {
+  const p = Math.min(1, Math.max(0, (now - w.start) / w.duration));
+  // Ease in/out so it starts and stops gently.
+  const e = p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
+  const x = w.from.x + (w.to.x - w.from.x) * e;
+  const y = w.from.y + (w.to.y - w.from.y) * e;
+  if (reducedMotion || p >= 1) return { x, y, lift: 0, tilt: 0, done: p >= 1 };
+  const phase = p * w.steps * Math.PI;
+  return {
+    x,
+    y,
+    lift: Math.abs(Math.sin(phase)) * cell * 0.12,
+    tilt: Math.sin(phase) * 7 * (Math.floor(p * w.steps) % 2 ? -1 : 1),
+    done: false,
+  };
+}

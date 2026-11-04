@@ -39,7 +39,7 @@ const PALETTE: Record<string, { core: string; glow: string; spark: string }> = {
   light: { core: '#fff7cc', glow: '#f5b83d', spark: '#ffffff' },
 };
 
-function reducedMotion(): boolean {
+export function reducedMotion(): boolean {
   return (
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
   );

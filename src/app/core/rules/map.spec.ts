@@ -1,5 +1,7 @@
 import { emptyMapState, MapState, MapToken } from '../models/map';
 import {
+  createWalk,
+  walkFrame,
   cellAt,
   cellKey,
   freeSpawnPoint,
@@ -124,5 +126,30 @@ describe('healthStatus', () => {
     expect(healthStatus({ marked: 5, max: 6 })).toBe('critical');
     expect(healthStatus({ marked: 6, max: 6 })).toBe('down');
     expect(healthStatus({ marked: 0, max: 0 })).toBe('ok');
+  });
+});
+
+describe('walking tokens', () => {
+  const w = createWalk({ x: 0, y: 0 }, { x: 300, y: 0 }, 100, 1000);
+
+  it('scales duration and steps with the distance', () => {
+    expect(w.duration).toBeCloseTo(660);
+    expect(w.steps).toBe(6);
+    expect(createWalk({ x: 0, y: 0 }, { x: 10, y: 0 }, 100, 0)).toMatchObject({
+      duration: 300,
+      steps: 2,
+    });
+  });
+
+  it('starts at the origin and ends exactly on the target, flat', () => {
+    expect(walkFrame(w, 1000, 100)).toMatchObject({ x: 0, y: 0, done: false });
+    expect(walkFrame(w, 5000, 100)).toEqual({ x: 300, y: 0, lift: 0, tilt: 0, done: true });
+  });
+
+  it('hops mid-step and only slides with reduced motion', () => {
+    const mid = walkFrame(w, 1000 + w.duration / 12, 100);
+    expect(mid.lift).toBeGreaterThan(5);
+    expect(Math.abs(mid.tilt)).toBeGreaterThan(1);
+    expect(walkFrame(w, 1000 + w.duration / 12, 100, true)).toMatchObject({ lift: 0, tilt: 0 });
   });
 });

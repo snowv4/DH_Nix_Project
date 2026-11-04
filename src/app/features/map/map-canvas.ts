@@ -16,6 +16,9 @@ import { MapEvent, MapState, MapToken } from '../../core/models/map';
 import {
   cellAt,
   cellKey,
+  createWalk,
+  Walk,
+  walkFrame,
   gridDimensions,
   HealthStatus,
   healthStatus,
@@ -26,7 +29,7 @@ import {
   Viewer,
   visibleTokens,
 } from '../../core/rules/map';
-import { playAttack } from './map-effects';
+import { playAttack, reducedMotion } from './map-effects';
 
 /** Default grid line opacity. */
 export const GRID_OPACITY = 0.22;
@@ -97,6 +100,9 @@ export class MapCanvas {
   private rulerStart: { x: number; y: number } | null = null;
   private rulerTimer: ReturnType<typeof setTimeout> | undefined;
   private lastEventId = '';
+  private readonly walks = new Map<string, Walk>();
+  /** Last stored position drawn per token, to notice moves. */
+  private readonly lastTarget = new Map<string, { x: number; y: number }>();
   private lastPinch: { dist: number; center: { x: number; y: number } } | null = null;
   private readonly portraitCache = new Map<string, HTMLImageElement>();
 
@@ -310,11 +316,45 @@ export class MapCanvas {
   private drawTokens(s: MapState): void {
     this.tokens.destroyChildren();
     const gm = this.viewer() === 'gm';
+    const now = performance.now();
     for (const t of visibleTokens(s, this.viewer())) {
-      this.tokens.add(this.tokenNode(t, s, gm));
+      this.queueWalk(t, s.grid.size, now);
+      const node = this.tokenNode(t, s, gm);
+      const w = this.walks.get(t.id);
+      if (w) node.position(walkFrame(w, now, s.grid.size));
+      this.tokens.add(node);
     }
     this.tokens.batchDraw();
+    if (this.walks.size) this.walkAnim.start();
   }
+
+  /**
+   * A token whose position changed since the last draw walks there instead of teleporting.
+   * Redraws mid-walk (HP changes etc.) keep the walk going from where the token is.
+   */
+  private queueWalk(t: MapToken, cell: number, now: number): void {
+    const prev = this.lastTarget.get(t.id);
+    this.lastTarget.set(t.id, { x: t.x, y: t.y });
+    if (!prev || (prev.x === t.x && prev.y === t.y)) return;
+    const current = this.walks.get(t.id);
+    const from = current ? walkFrame(current, now, cell) : prev;
+    this.walks.set(t.id, createWalk({ x: from.x, y: from.y }, { x: t.x, y: t.y }, cell, now));
+  }
+
+  /** One Konva animation drives every walking token, then stops itself. */
+  private readonly walkAnim = new Konva.Animation(() => {
+    const now = performance.now();
+    const cell = this.state().grid.size;
+    const reduced = reducedMotion();
+    for (const [id, w] of this.walks) {
+      const node = this.tokens.findOne<Konva.Group>('#' + id);
+      const f = walkFrame(w, now, cell, reduced);
+      node?.position({ x: f.x, y: f.y - f.lift });
+      node?.rotation(f.tilt);
+      if (f.done || !node) this.walks.delete(id);
+    }
+    if (!this.walks.size) this.walkAnim.stop();
+  }, this.tokens);
 
   private tokenNode(t: MapToken, s: MapState, gm: boolean): Konva.Group {
     const r = (t.size * s.grid.size) / 2 - 3;
@@ -459,6 +499,8 @@ export class MapCanvas {
         this.dragging = false;
         const snapped = snapToGrid(s.grid, group.x(), group.y());
         group.position(snapped);
+        // The GM already dragged it there: no walk on this screen (the TV still walks).
+        this.lastTarget.set(t.id, snapped);
         this.tokenMoved.emit({ id: t.id, ...snapped });
       });
     }
