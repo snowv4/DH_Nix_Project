@@ -4,6 +4,10 @@ export interface MapGrid {
   offsetX: number;
   offsetY: number;
   show: boolean;
+  /** Draw the grid on the TV too (default true). The GM always sees it while `show` is on. */
+  showOnTv?: boolean;
+  /** Line opacity 0–1 (default 0.22). */
+  opacity?: number;
 }
 
 export interface MapToken {

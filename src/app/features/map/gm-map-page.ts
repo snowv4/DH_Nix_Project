@@ -17,7 +17,7 @@ import { MapGrid, MapToken } from '../../core/models/map';
 import { cellKey, freeSpawnPoint, gridDimensions, paintFog } from '../../core/rules/map';
 import { resizeImageToDataUrl } from '../../shared/ui/resize-image';
 import { IconPicker } from '../../shared/ui/icon-picker';
-import { MapCanvas, MapTool } from './map-canvas';
+import { GRID_OPACITY, MapCanvas, MapTool } from './map-canvas';
 import { ATTACK_EFFECTS } from './map-effects';
 import { TokenSheet } from './token-sheet';
 import { Dialog } from '@angular/cdk/dialog';
@@ -108,6 +108,9 @@ export class GmMapPage {
   /** Reopens on every new selection; the ✕ only hides it for the current token. */
   protected readonly sheetOpen = linkedSignal(() => !!this.selectedId());
   protected readonly sheetExtended = signal(false);
+  protected readonly gridOpacityPct = computed(() =>
+    Math.round((this.state().grid.opacity ?? GRID_OPACITY) * 100),
+  );
   /** PCs not on this map yet. */
   protected readonly missingPcs = computed(() => {
     const onMap = new Set(

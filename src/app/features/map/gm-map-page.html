@@ -421,6 +421,34 @@
                 {{ s.grid.show ? 'Esconder' : 'Mostrar' }}
               </button>
             </div>
+            @if (s.grid.show) {
+              <div class="flex items-center justify-between gap-2 text-sm">
+                <span class="text-muted">Grade na TV</span>
+                <button
+                  type="button"
+                  class="btn min-h-11 px-3 text-sm"
+                  [class.!border-hope]="s.grid.showOnTv !== false"
+                  [attr.aria-pressed]="s.grid.showOnTv !== false"
+                  (click)="setGrid({ showOnTv: s.grid.showOnTv === false })"
+                >
+                  {{ s.grid.showOnTv !== false ? '📺 Aparece na TV' : '🙈 Só pra mim' }}
+                </button>
+              </div>
+              <label class="flex items-center gap-3 text-sm">
+                <span class="text-muted">Opacidade</span>
+                <input
+                  class="min-h-11 flex-1 accent-[var(--color-hope)]"
+                  type="range"
+                  min="5"
+                  max="100"
+                  step="5"
+                  [value]="gridOpacityPct()"
+                  (change)="setGrid({ opacity: +value($event) / 100 })"
+                  aria-label="Opacidade da grade"
+                />
+                <span class="w-10 text-right tabular-nums">{{ gridOpacityPct() }}%</span>
+              </label>
+            }
             <label class="flex items-center gap-2 text-sm">
               <span class="flex-1 text-muted">Quadrados na largura</span>
               <input

@@ -28,6 +28,9 @@ import {
 } from '../../core/rules/map';
 import { playAttack } from './map-effects';
 
+/** Default grid line opacity. */
+export const GRID_OPACITY = 0.22;
+
 export type MapTool = 'move' | 'reveal' | 'hide' | 'ruler' | 'attack';
 
 const MIN_SCALE = 0.15;
@@ -194,10 +197,11 @@ export class MapCanvas {
     } else {
       this.base.add(new Konva.Rect({ width: s.width, height: s.height, fill: '#1a1626' }));
     }
-    if (s.grid.show && s.grid.size >= 8) {
+    const tvHidden = this.viewer() === 'tv' && s.grid.showOnTv === false;
+    if (s.grid.show && !tvHidden && s.grid.size >= 8) {
       const { cols, rows, startCol, startRow } = gridDimensions(s);
       const g = s.grid;
-      const stroke = 'rgba(255,255,255,0.22)';
+      const stroke = `rgba(255,255,255,${g.opacity ?? GRID_OPACITY})`;
       for (let c = 0; c <= cols; c++) {
         const x = g.offsetX + (startCol + c) * g.size;
         this.base.add(
