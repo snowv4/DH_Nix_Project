@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 
-/** Character portrait in an ornate gold frame. Tapping it opens the file picker when editable. */
+/**
+ * Character portrait in an ornate gold frame. Without a picture, tapping opens the file picker;
+ * with one, it opens a menu to view it full screen or change it.
+ */
 @Component({
   selector: 'app-portrait-frame',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,19 +29,73 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           </span>
         }
       </span>
-      @if (editable()) {
+      @if (src()) {
+        <!-- With a picture: tap opens a small menu (view large / change) instead of the picker. -->
+        <button
+          type="button"
+          class="absolute inset-0 z-10 size-full cursor-pointer"
+          [attr.aria-label]="'Opções do retrato de ' + name()"
+          [attr.aria-expanded]="menu()"
+          (click)="menu.set(!menu())"
+        ></button>
+        @if (menu()) {
+          <div
+            class="absolute inset-x-2 bottom-2 z-20 flex flex-col gap-1 rounded-xl border border-line bg-ink/95 p-1 shadow-xl"
+            role="menu"
+          >
+            <button
+              type="button"
+              class="btn min-h-11 text-sm"
+              role="menuitem"
+              (click)="openViewer()"
+            >
+              🔍 Ver em tamanho grande
+            </button>
+            @if (editable()) {
+              <label class="btn relative min-h-11 cursor-pointer text-sm" role="menuitem">
+                📷 Trocar foto
+                <input class="sr-only" type="file" accept="image/*" (change)="onPick($event)" />
+              </label>
+            }
+          </div>
+        }
+      } @else if (editable()) {
         <input
           class="absolute inset-0 z-10 size-full cursor-pointer opacity-0"
           type="file"
           accept="image/*"
           (change)="onPick($event)"
-          [attr.aria-label]="'Trocar retrato de ' + name()"
+          [attr.aria-label]="'Adicionar retrato de ' + name()"
         />
       }
       @if (busy()) {
         <span class="absolute inset-0 grid place-items-center bg-ink/70 text-sm">Salvando…</span>
       }
     </div>
+    @if (viewer()) {
+      <div
+        class="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Retrato de ' + name()"
+        (click)="viewer.set(false)"
+        (keydown.escape)="viewer.set(false)"
+        tabindex="-1"
+      >
+        <img
+          class="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+          [src]="src()"
+          [alt]="'Retrato de ' + name()"
+        />
+        <button
+          type="button"
+          class="btn absolute top-3 right-3 bg-panel"
+          (click)="viewer.set(false)"
+        >
+          Fechar ✕
+        </button>
+      </div>
+    }
   `,
   styles: `
     .frame {
@@ -102,11 +159,19 @@ export class PortraitFrame {
   readonly editable = input(false);
   readonly busy = input(false);
   readonly picked = output<File>();
+  protected readonly menu = signal(false);
+  protected readonly viewer = signal(false);
+
+  protected openViewer(): void {
+    this.menu.set(false);
+    this.viewer.set(true);
+  }
 
   protected onPick(e: Event): void {
     const el = e.target as HTMLInputElement;
     const file = el.files?.[0];
     if (file) this.picked.emit(file);
     el.value = '';
+    this.menu.set(false);
   }
 }
