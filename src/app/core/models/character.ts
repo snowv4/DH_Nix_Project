@@ -44,12 +44,20 @@ export interface Gold {
   chests: number;
 }
 
+/** Active condition: a built-in id (CONDITIONS) or a custom marker with its own label/icon. */
+export interface ConditionTag {
+  id: string;
+  label?: string;
+  icon?: string;
+}
+
 export interface Character {
   id: string;
   status: 'draft' | 'active' | 'retired';
   name: string;
   pronouns: string;
   portraitUrl: string;
+  conditions?: ConditionTag[];
   level: number;
   classId: string;
   subclass: string;

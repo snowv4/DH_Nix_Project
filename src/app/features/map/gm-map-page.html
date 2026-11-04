@@ -10,6 +10,7 @@
         [tool]="tool()"
         [portraits]="portraits()"
         [health]="health()"
+        [conditions]="conditionsByRef()"
         [selectedId]="selectedId()"
         [showRanges]="showRanges()"
         (tokenMoved)="onTokenMoved($event)"
@@ -64,6 +65,8 @@
         [(extended)]="sheetExtended"
         (dismiss)="sheetOpen.set(false)"
         (openFull)="openFullSheet()"
+        [tokenConditions]="selected()?.conditions"
+        (tokenConditionsChange)="updateSelected({ conditions: $event })"
       />
     }
 
@@ -260,6 +263,8 @@
               [(extended)]="sheetExtended"
               (dismiss)="sheetOpen.set(false)"
               (openFull)="openFullSheet()"
+              [tokenConditions]="selected()?.conditions"
+              (tokenConditionsChange)="updateSelected({ conditions: $event })"
             />
           }
           @if (selected(); as t) {

@@ -124,6 +124,10 @@
         </div>
 
         <div class="card">
+          <app-condition-picker [value]="c.conditions" (changed)="save({ conditions: $event })" />
+        </div>
+
+        <div class="card">
           <p class="label mb-3">Pontos de vida e limiares</p>
           <app-damage-thresholds [major]="c.thresholds.major" [severe]="c.thresholds.severe" />
         </div>

@@ -24,6 +24,7 @@ import { MapCanvas } from './map-canvas';
         [image]="image()"
         [portraits]="portraits()"
         [health]="health()"
+        [conditions]="conditionsByRef()"
       />
       @if (!state().imageId) {
         <p class="absolute inset-0 grid place-items-center font-display text-2xl text-muted">
@@ -47,5 +48,8 @@ export class TvPage {
   );
   protected readonly health = computed(() =>
     Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.hp])),
+  );
+  protected readonly conditionsByRef = computed(() =>
+    Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.conditions])),
   );
 }

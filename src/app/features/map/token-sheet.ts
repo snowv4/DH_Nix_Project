@@ -17,6 +17,8 @@ import { Npc } from '../../core/models/npc';
 import { toggleSlot } from '../../core/rules/character';
 import { TokenIconView } from '../../shared/ui/icon-picker';
 import { ResourceTrack } from '../../shared/ui/resource-track';
+import { ConditionPicker } from '../../shared/ui/condition-picker';
+import { ConditionTag } from '../../core/models/character';
 import { RichText } from '../../shared/ui/rich-text';
 
 /**
@@ -25,7 +27,7 @@ import { RichText } from '../../shared/ui/rich-text';
  */
 @Component({
   selector: 'app-token-sheet',
-  imports: [ResourceTrack, RichText, TokenIconView],
+  imports: [ResourceTrack, RichText, TokenIconView, ConditionPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article
@@ -119,6 +121,7 @@ import { RichText } from '../../shared/ui/rich-text';
           [max]="c.armor.score"
           (tap)="tapPc('armor', $event)"
         />
+        <app-condition-picker [value]="c.conditions" (changed)="setPcConditions($event)" />
         <div class="grid grid-cols-3 gap-1 text-center text-xs">
           <div class="rounded-lg bg-panel-2 p-1.5">
             <p class="text-muted">Evasão</p>
@@ -177,6 +180,7 @@ import { RichText } from '../../shared/ui/rich-text';
             (tap)="tapNpc('stress', $event)"
           />
         }
+        <app-condition-picker [value]="n.conditions" (changed)="setNpcConditions($event)" />
         <div class="grid grid-cols-3 gap-1 text-center text-xs">
           <div class="rounded-lg bg-panel-2 p-1.5">
             <p class="text-muted">Dificuldade</p>
@@ -218,6 +222,10 @@ import { RichText } from '../../shared/ui/rich-text';
           </label>
         }
       } @else {
+        <app-condition-picker
+          [value]="tokenConditions()"
+          (changed)="tokenConditionsChange.emit($event)"
+        />
         <p class="text-sm text-muted">
           Este token não está ligado a uma ficha. Monstros rápidos não têm PV; para controlar PV,
           crie um NPC (ou importe do Bestiário) e ponha no mapa.
@@ -234,6 +242,9 @@ export class TokenSheet {
   readonly extended = model(false);
   readonly dismiss = output();
   readonly openFull = output();
+  /** Conditions of a token without a sheet (the page saves them on the token). */
+  readonly tokenConditions = input<ConditionTag[] | undefined>([]);
+  readonly tokenConditionsChange = output<ConditionTag[]>();
 
   private readonly characters = inject(CharacterRepository);
   private readonly npcs = inject(NpcRepository);
@@ -282,6 +293,16 @@ export class TokenSheet {
         void this.characters.update(c.id, { armor: { ...c.armor, slotsMarked } });
       }
     }
+  }
+
+  protected setPcConditions(conditions: ConditionTag[]): void {
+    const c = this.character();
+    if (c) void this.characters.update(c.id, { conditions });
+  }
+
+  protected setNpcConditions(conditions: ConditionTag[]): void {
+    const n = this.npc();
+    if (n) void this.npcs.update(n.id, { conditions });
   }
 
   protected tapNpc(track: 'hp' | 'stress', index: number): void {

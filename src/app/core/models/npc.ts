@@ -1,4 +1,4 @@
-import { Tracked } from './character';
+import { ConditionTag, Tracked } from './character';
 
 /** GM-only NPC / adversary sheet: `campaigns/nix/npcs/{id}` (kept apart from the players). */
 export interface Npc {
@@ -20,6 +20,7 @@ export interface Npc {
   portraitUrl: string;
   /** TOKEN_ICONS id for map tokens ('' = initial letter). */
   icon?: string;
+  conditions?: ConditionTag[];
   /** Free tags for quick filtering ("aliado", "vila", "chefe"…). */
   tags: string;
   updatedAt: number;

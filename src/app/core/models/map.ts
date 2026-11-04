@@ -1,3 +1,4 @@
+import { ConditionTag } from './character';
 export interface MapGrid {
   /** Cell size in image pixels. */
   size: number;
@@ -26,6 +27,8 @@ export interface MapToken {
   hidden: boolean;
   /** TOKEN_ICONS id drawn instead of the initial (portraits still win). */
   icon?: string;
+  /** Conditions of tokens without a sheet (quick monsters). */
+  conditions?: ConditionTag[];
 }
 
 /** Effects the GM broadcasts to the TV (ruler line, attack animations). */

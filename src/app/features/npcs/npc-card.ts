@@ -7,6 +7,8 @@ import { ResourceTrack } from '../../shared/ui/resource-track';
 import { RichText } from '../../shared/ui/rich-text';
 
 /** Compact NPC stat block for the GM panel: everything needed mid-combat at a glance. */
+import { conditionViews } from '../../core/rules/conditions';
+
 @Component({
   selector: 'app-npc-card',
   imports: [ResourceTrack, DamageThresholds, RichText, TokenIconView],
@@ -83,6 +85,15 @@ import { RichText } from '../../shared/ui/rich-text';
         }
         @if (!n.hp.max && !n.stress.max) {
           <p class="text-xs text-muted">Defina PV e Estresse em “Editar”.</p>
+        }
+        @if (conds().length) {
+          <p class="flex flex-wrap gap-1 text-xs">
+            @for (v of conds(); track v.key) {
+              <span class="rounded-full border border-fear/60 bg-fear/15 px-2 py-0.5 text-white"
+                >{{ v.icon }} {{ v.label }}</span
+              >
+            }
+          </p>
         }
         @if (n.thresholds.major) {
           <app-damage-thresholds [major]="n.thresholds.major" [severe]="n.thresholds.severe" />
@@ -167,6 +178,7 @@ export class NpcCard {
   readonly hpTap = output<number>();
   readonly stressTap = output<number>();
 
+  protected readonly conds = computed(() => conditionViews(this.npc().conditions));
   protected readonly typeLabel = computed(
     () => ADVERSARY_TYPES.find((t) => t.id === this.npc().type)?.name ?? 'NPC',
   );

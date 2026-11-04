@@ -30,6 +30,8 @@ import {
   visibleTokens,
 } from '../../core/rules/map';
 import { playAttack, reducedMotion } from './map-effects';
+import { ConditionTag } from '../../core/models/character';
+import { conditionViews } from '../../core/rules/conditions';
 
 /** Default grid line opacity. */
 export const GRID_OPACITY = 0.22;
@@ -72,6 +74,8 @@ export class MapCanvas {
   readonly portraits = input<Record<string, string>>({});
   /** characterId / npcId → HP. */
   readonly health = input<Record<string, { marked: number; max: number }>>({});
+  /** characterId / npcId → active conditions (drawn as small badges). */
+  readonly conditions = input<Record<string, ConditionTag[] | undefined>>({});
   readonly selectedId = input('');
   /** Draw the Daggerheart range bands around the selected token (GM). */
   readonly showRanges = input(false);
@@ -136,6 +140,7 @@ export class MapCanvas {
       this.state();
       this.portraits();
       this.health();
+      this.conditions();
       this.selectedId();
       this.showRanges();
       this.loadImage(this.image());
@@ -422,6 +427,7 @@ export class MapCanvas {
       }),
     );
 
+    this.addConditionBadges(group, t.refId ? this.conditions()[t.refId] : t.conditions, r);
     // GM: exact HP as pips around the top of the token.
     if (gm && hp && hp.max > 0) this.addHpPips(group, hp, r);
     // Everyone: a coarse status symbol instead of numbers.
@@ -505,6 +511,40 @@ export class MapCanvas {
       });
     }
     return group;
+  }
+
+  /** Up to 3 condition icons down the token's left side, then "+N". */
+  private addConditionBadges(
+    group: Konva.Group,
+    tags: ConditionTag[] | undefined,
+    r: number,
+  ): void {
+    const views = conditionViews(tags);
+    if (!views.length) return;
+    const br = Math.max(9, r * 0.3);
+    const shown =
+      views.length > 3
+        ? [...views.slice(0, 2).map((v) => v.icon), `+${views.length - 2}`]
+        : views.map((v) => v.icon);
+    shown.forEach((icon, i) => {
+      const y = -r * 0.75 + i * br * 2.05;
+      const x = -r - br * 0.35;
+      group.add(
+        new Konva.Circle({ x, y, radius: br, fill: '#1a1626', stroke: '#8b5cf6', strokeWidth: 2 }),
+        new Konva.Text({
+          x: x - br,
+          y: y - br,
+          width: br * 2,
+          height: br * 2,
+          text: icon,
+          fontSize: icon.startsWith('+') ? br : br * 1.15,
+          fill: '#fff',
+          align: 'center',
+          verticalAlign: 'middle',
+          listening: false,
+        }),
+      );
+    });
   }
 
   /** Up to 12 pips on an arc over the token; bigger pools fall back to a bar. */

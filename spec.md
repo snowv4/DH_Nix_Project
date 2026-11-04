@@ -257,6 +257,7 @@ Botão "Subir de nível" (o mestre libera ou o jogador aciona). Passos:
 - Tokens podem ser **ocultos** (só o mestre vê).
 - Régua e alcances pela regra opcional de alcances definidos do SRD: Corpo a corpo 1, Muito Perto 3, Perto 6, Longe 12, Muito Longe 13+ quadrados (diagonal conta 1). Escala ajustável por "quadrados na largura".
 - Vários mapas salvos; o mestre prepara um enquanto outro está na TV.
+- Condições: as 3 padrão do SRD (Oculto, Imobilizado, Vulnerável), as especiais de cartas/classes e de adversários do Patamar 1, e marcadores personalizados (nome + emoji). Ficam em `conditions` da ficha/NPC (ou do token, se não tiver ficha) e aparecem como selos no token, inclusive na TV.
 - Ficha rápida no mapa: tocar num token (PJ ou NPC) abre um cartão para marcar PV/Estresse/Esperança/Armadura, com visão resumida/completa e atalho para a ficha inteira.
 - Marcadores de PV nos tokens: mestre vê pontinhos; TV vê só símbolos (🩸 ferido, 💀 crítico, ✖ caído).
 - Animações de ataque (corte, impacto, perfuração; flecha e elementos à distância), transmitidas à TV via `lastEvent`.

@@ -31,6 +31,8 @@ type View = 'compact' | 'extended';
 
 const VIEW_KEY = 'dh-nix.gm-view';
 
+import { ConditionView, conditionViews } from '../../core/rules/conditions';
+
 @Component({
   selector: 'app-gm-panel',
   imports: [RouterLink, NpcCard],
@@ -182,6 +184,10 @@ export class GmPanel {
       width: '72rem',
       maxWidth: 'calc(100vw - 1.5rem)',
     });
+  }
+
+  protected conds(tags: Character['conditions']): ConditionView[] {
+    return conditionViews(tags);
   }
 
   protected className(c: Character): string {

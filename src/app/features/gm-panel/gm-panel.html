@@ -185,6 +185,16 @@
                 </span>
               </button>
 
+              @if (conds(c.conditions).length) {
+                <p class="flex flex-wrap gap-1 text-xs">
+                  @for (v of conds(c.conditions); track v.key) {
+                    <span
+                      class="rounded-full border border-fear/60 bg-fear/15 px-2 py-0.5 text-white"
+                      >{{ v.icon }} {{ v.label }}</span
+                    >
+                  }
+                </p>
+              }
               <dl class="grid grid-cols-2 gap-2 text-sm">
                 @for (
                   r of [

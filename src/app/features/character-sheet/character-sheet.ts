@@ -43,6 +43,8 @@ type TextField = 'items' | 'features' | 'notes' | 'appearance' | 'background' | 
 
 type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes' | 'sessions';
 
+import { ConditionPicker } from '../../shared/ui/condition-picker';
+
 @Component({
   selector: 'app-character-sheet',
   imports: [
@@ -54,6 +56,7 @@ type Tab = 'main' | 'traits' | 'gear' | 'cards' | 'notes' | 'sessions';
     RouterLink,
     InventoryList,
     SessionNotebook,
+    ConditionPicker,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './character-sheet.html',

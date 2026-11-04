@@ -65,6 +65,9 @@ export class GmMapPage {
   protected readonly health = computed(() =>
     Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.hp])),
   );
+  protected readonly conditionsByRef = computed(() =>
+    Object.fromEntries([...this.characters(), ...this.npcs()].map((c) => [c.id, c.conditions])),
+  );
 
   // ---------- UI state ----------
   protected readonly tool = signal<MapTool>('move');
