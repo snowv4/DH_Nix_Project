@@ -1,3 +1,4 @@
+import { remainingTapIndex } from '../../core/rules/character';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 export type TrackTone = 'hope' | 'hp' | 'stress' | 'armor';
@@ -9,7 +10,7 @@ export type TrackTone = 'hope' | 'hp' | 'stress' | 'armor';
   template: `
     <div class="flex items-center justify-between gap-2">
       <span class="label">{{ label() }}</span>
-      <span class="text-sm tabular-nums text-muted">{{ value() }}/{{ max() }}</span>
+      <span class="text-sm tabular-nums text-muted">{{ shown() }}/{{ max() }}</span>
     </div>
     <div class="mt-2 flex flex-wrap gap-1.5" role="group" [attr.aria-label]="label()">
       @for (slot of slots(); track $index) {
@@ -21,7 +22,7 @@ export type TrackTone = 'hope' | 'hp' | 'stress' | 'armor';
           [attr.aria-label]="label() + ' ' + ($index + 1)"
           [attr.aria-pressed]="slot"
           [disabled]="readonly()"
-          (click)="tap.emit($index)"
+          (click)="onTap($index)"
         >
           <span class="mark" [class.round]="tone() === 'hope'"></span>
         </button>
@@ -88,7 +89,16 @@ export class ResourceTrack {
   readonly readonly = input(false);
   readonly tap = output<number>();
 
-  protected readonly slots = computed(() =>
-    Array.from({ length: Math.max(0, this.max()) }, (_, i) => i < this.value()),
+  /** HP, Stress and Armor read as "what is left" (6/6 → 5/6 on damage); Hope counts up. */
+  protected readonly remaining = computed(() => this.tone() !== 'hope');
+  protected readonly shown = computed(() =>
+    this.remaining() ? Math.max(0, this.max() - this.value()) : this.value(),
   );
+  protected readonly slots = computed(() =>
+    Array.from({ length: Math.max(0, this.max()) }, (_, i) => i < this.shown()),
+  );
+
+  protected onTap(index: number): void {
+    this.tap.emit(this.remaining() ? remainingTapIndex(this.value(), this.max(), index) : index);
+  }
 }

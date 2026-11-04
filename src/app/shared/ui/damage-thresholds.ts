@@ -8,21 +8,21 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     <div class="flex items-stretch" role="group" aria-label="Limiares de dano">
       <div class="tier">
         <p class="title">Dano<br />Menor</p>
-        <p class="hint">Marque 1 PV</p>
+        <p class="hint">−1 PV</p>
       </div>
       <div class="value" [attr.aria-label]="'Limiar Maior ' + major()">
         <span>{{ major() }}</span>
       </div>
       <div class="tier">
         <p class="title">Dano<br />Maior</p>
-        <p class="hint">Marque 2 PV</p>
+        <p class="hint">−2 PV</p>
       </div>
       <div class="value" [attr.aria-label]="'Limiar Grave ' + severe()">
         <span>{{ severe() }}</span>
       </div>
       <div class="tier">
         <p class="title">Dano<br />Grave</p>
-        <p class="hint">Marque 3 PV</p>
+        <p class="hint">−3 PV</p>
       </div>
     </div>
   `,

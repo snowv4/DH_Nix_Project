@@ -21,6 +21,17 @@ export function toggleSlot(track: Tracked, index: number): Tracked {
   return { ...track, marked: clamp(target, 0, track.max) };
 }
 
+/**
+ * Trackers shown as "remaining" (HP, Stress, Armor): the player taps the box of what is left.
+ * Tapping box i leaves i+1 remaining, or i if it was already the last remaining one (toggle).
+ * Returns the index to feed to toggleSlot() so the stored `marked` count stays the same model.
+ */
+export function remainingTapIndex(marked: number, max: number, index: number): number {
+  const remaining = max - marked;
+  const nextRemaining = index + 1 === remaining ? index : index + 1;
+  return max - nextRemaining - 1;
+}
+
 export function createBlankCharacter(name: string, now = Date.now()): Character {
   return {
     id: characterIdFromName(name),

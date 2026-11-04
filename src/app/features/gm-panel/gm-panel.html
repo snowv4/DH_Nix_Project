@@ -188,10 +188,20 @@
               <dl class="grid grid-cols-2 gap-2 text-sm">
                 @for (
                   r of [
-                    { l: 'PV', v: c.hp.marked, m: c.hp.max, cls: 'bg-hp' },
-                    { l: 'Estresse', v: c.stress.marked, m: c.stress.max, cls: 'bg-stress' },
+                    { l: 'PV', v: c.hp.max - c.hp.marked, m: c.hp.max, cls: 'bg-hp' },
+                    {
+                      l: 'Estresse',
+                      v: c.stress.max - c.stress.marked,
+                      m: c.stress.max,
+                      cls: 'bg-stress',
+                    },
                     { l: 'Esperança', v: c.hope.current, m: c.hope.max, cls: 'bg-hope' },
-                    { l: 'Armadura', v: c.armor.slotsMarked, m: c.armor.score, cls: 'bg-armor' },
+                    {
+                      l: 'Armadura',
+                      v: c.armor.score - c.armor.slotsMarked,
+                      m: c.armor.score,
+                      cls: 'bg-armor',
+                    },
                   ];
                   track r.l
                 ) {
