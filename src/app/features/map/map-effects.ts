@@ -496,3 +496,314 @@ function zigzag(from: Point, to: Point, size: number): number[] {
   pts.push(to.x, to.y);
   return pts;
 }
+
+// ---------- Damage outcome (after the attack lands) ----------
+
+/** How long each attack takes to land, so the outcome plays right after it. */
+function landingDelay(effect: string): number {
+  if (effect === 'slash' || effect === 'impact' || effect === 'pierce') return 420;
+  if (effect === 'lightning' || effect === 'light') return 520;
+  return 760;
+}
+
+const DAMAGE_COLOR = {
+  physical: { core: '#e5484d', glow: '#ff8a65', spark: '#ffd0c2' },
+  magic: { core: '#a855f7', glow: '#22d3ee', spark: '#f0abfc' },
+};
+
+/**
+ * Plays what the hit did: miss, immune, armor block, direct hit and one look per severity
+ * (Minor → Massive grows in size, shake and text). Physical is red, magic violet/cyan.
+ */
+export function playDamage(layer: Konva.Layer, ev: MapEvent, cell: number): void {
+  const r = ev.result;
+  if (!r) return;
+  const at = ev.to;
+  const size = Math.max(24, cell);
+  const c = DAMAGE_COLOR[r.kind];
+  setTimeout(() => {
+    if (reducedMotion()) {
+      floatText(layer, at, size, outcomeText(r), r.hp ? c.core : '#cbd5e1', 1);
+      return;
+    }
+    if (r.miss) return miss(layer, ev.from, at, size);
+    if (r.resistance === 'immune') return immune(layer, at, size);
+    let wait = 0;
+    if (r.armorUsed) {
+      shield(layer, at, size);
+      wait = 380;
+    }
+    setTimeout(() => {
+      if (r.direct && r.hp) directHit(layer, ev.from, at, size, c.core);
+      switch (r.final) {
+        case 'minor':
+          flash(layer, at, size * 0.8, c.core);
+          sparks(layer, at, size, c.spark, 6, 0.6);
+          break;
+        case 'major':
+          flash(layer, at, size, c.core);
+          sparks(layer, at, size, c.spark, 10, 0.9);
+          shake(layer, 4, 300);
+          break;
+        case 'severe':
+          burst(layer, at, size, c, 1);
+          shake(layer, 8, 450);
+          break;
+        case 'massive':
+          burst(layer, at, size, c, 1.6);
+          flash(layer, at, size * 2.2, '#ffffff');
+          shake(layer, 14, 650);
+          break;
+      }
+      floatText(layer, at, size, outcomeText(r), r.hp ? c.core : '#cbd5e1', r.hp >= 3 ? 1.5 : 1);
+      if (r.resistance === 'resistant')
+        floatText(layer, { x: at.x + size * 0.6, y: at.y }, size, '½', '#cbd5e1', 0.8);
+      if (r.down)
+        setTimeout(
+          () =>
+            floatText(layer, { x: at.x, y: at.y + size * 0.2 }, size, '💀 Caiu!', '#ffffff', 1.4),
+          450,
+        );
+    }, wait);
+  }, landingDelay(ev.effect));
+}
+
+function outcomeText(r: NonNullable<MapEvent['result']>): string {
+  if (r.miss) return 'Errou!';
+  if (r.resistance === 'immune') return 'Imune';
+  if (!r.hp) return r.armorUsed ? 'Bloqueado!' : 'Sem dano';
+  const tag = r.final === 'massive' ? ' MASSIVO' : r.final === 'severe' ? ' GRAVE' : '';
+  return `−${r.hp} PV${tag}${r.direct ? ' ⚡' : ''}`;
+}
+
+/** Text that pops above the target, rises and fades. */
+function floatText(
+  layer: Konva.Layer,
+  at: Point,
+  size: number,
+  text: string,
+  color: string,
+  scale: number,
+): void {
+  const node = new Konva.Text({
+    text,
+    fontSize: size * 0.42 * scale,
+    fontStyle: 'bold',
+    fill: color,
+    stroke: '#0b0912',
+    strokeWidth: Math.max(2, size * 0.05),
+    fillAfterStrokeEnabled: true,
+    listening: false,
+  });
+  node.offset({ x: node.width() / 2, y: node.height() / 2 });
+  node.position({ x: at.x, y: at.y - size * 0.7 });
+  layer.add(node);
+  animate(
+    layer,
+    1500,
+    (t) => {
+      const pop = t < 0.15 ? 0.6 + (t / 0.15) * 0.5 : 1.1 - Math.min(0.1, (t - 0.15) * 0.5);
+      node.scale({ x: pop, y: pop });
+      node.y(at.y - size * (0.7 + t * 0.6));
+      node.opacity(t > 0.7 ? (1 - t) / 0.3 : 1);
+    },
+    () => node.destroy(),
+  );
+}
+
+/** The blow whooshes past the target. */
+function miss(layer: Konva.Layer, from: Point, at: Point, size: number): void {
+  const dx = at.x - from.x;
+  const dy = at.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * size * 0.7;
+  const ny = (dx / len) * size * 0.7;
+  const streak = new Konva.Line({
+    points: [
+      at.x + nx - (dx / len) * size,
+      at.y + ny - (dy / len) * size,
+      at.x + nx + (dx / len) * size,
+      at.y + ny + (dy / len) * size,
+    ],
+    stroke: '#e2e8f0',
+    strokeWidth: size * 0.08,
+    lineCap: 'round',
+    opacity: 0,
+    dash: [size * 0.3, size * 0.15],
+  });
+  layer.add(streak);
+  animate(
+    layer,
+    500,
+    (t) => {
+      streak.opacity(t < 0.3 ? t / 0.3 : (1 - t) / 0.7);
+      streak.dashOffset(-t * size * 2);
+    },
+    () => streak.destroy(),
+  );
+  floatText(layer, at, size, 'Errou!', '#cbd5e1', 1);
+}
+
+/** A cyan bubble flares and nothing gets through. */
+function immune(layer: Konva.Layer, at: Point, size: number): void {
+  const bubble = new Konva.Circle({
+    x: at.x,
+    y: at.y,
+    radius: size * 0.6,
+    stroke: '#67e8f9',
+    strokeWidth: size * 0.08,
+    shadowColor: '#22d3ee',
+    shadowBlur: 20,
+  });
+  layer.add(bubble);
+  animate(
+    layer,
+    700,
+    (t) => {
+      bubble.radius(size * (0.6 + Math.sin(t * Math.PI) * 0.15));
+      bubble.opacity(1 - t * t);
+    },
+    () => bubble.destroy(),
+  );
+  floatText(layer, at, size, 'Imune', '#67e8f9', 1);
+}
+
+/** Armor Slot marked: a steel shield flashes in front of the target with sparks. */
+function shield(layer: Konva.Layer, at: Point, size: number): void {
+  const s = size * 0.55;
+  const node = new Konva.Shape({
+    x: at.x,
+    y: at.y,
+    sceneFunc: (ctx, shape) => {
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.quadraticCurveTo(s * 0.9, -s * 0.9, s * 0.9, -s * 0.35);
+      ctx.quadraticCurveTo(s * 0.85, s * 0.55, 0, s);
+      ctx.quadraticCurveTo(-s * 0.85, s * 0.55, -s * 0.9, -s * 0.35);
+      ctx.quadraticCurveTo(-s * 0.9, -s * 0.9, 0, -s);
+      ctx.closePath();
+      ctx.fillStrokeShape(shape);
+    },
+    fill: 'rgba(96,165,250,0.35)',
+    stroke: '#93c5fd',
+    strokeWidth: size * 0.06,
+    shadowColor: '#60a5fa',
+    shadowBlur: 18,
+    scaleX: 0.4,
+    scaleY: 0.4,
+  });
+  layer.add(node);
+  sparks(layer, at, size, '#bfdbfe', 12, 0.8);
+  animate(
+    layer,
+    650,
+    (t) => {
+      const k = t < 0.25 ? 0.4 + (t / 0.25) * 0.75 : 1.15 - (t - 0.25) * 0.2;
+      node.scale({ x: k, y: k });
+      node.opacity(t > 0.6 ? (1 - t) / 0.4 : 1);
+    },
+    () => node.destroy(),
+  );
+}
+
+/** Direct damage: a bright streak goes clean through the target. */
+function directHit(layer: Konva.Layer, from: Point, at: Point, size: number, color: string): void {
+  const dx = at.x - from.x;
+  const dy = at.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const line = new Konva.Line({
+    points: [
+      at.x - ux * size * 0.8,
+      at.y - uy * size * 0.8,
+      at.x - ux * size * 0.8,
+      at.y - uy * size * 0.8,
+    ],
+    stroke: '#ffffff',
+    strokeWidth: size * 0.07,
+    lineCap: 'round',
+    shadowColor: color,
+    shadowBlur: 16,
+  });
+  layer.add(line);
+  animate(
+    layer,
+    380,
+    (t) => {
+      const e = easeOut(t);
+      line.points([
+        at.x - ux * size * 0.8,
+        at.y - uy * size * 0.8,
+        at.x + ux * size * (-0.8 + e * 1.9),
+        at.y + uy * size * (-0.8 + e * 1.9),
+      ]);
+      line.opacity(1 - t * 0.8);
+    },
+    () => line.destroy(),
+  );
+}
+
+/** Severe / Massive: rings, a star burst and lots of sparks. */
+function burst(
+  layer: Konva.Layer,
+  at: Point,
+  size: number,
+  c: { core: string; glow: string; spark: string },
+  k: number,
+): void {
+  const star = new Konva.Star({
+    x: at.x,
+    y: at.y,
+    numPoints: 10,
+    innerRadius: size * 0.25 * k,
+    outerRadius: size * 0.7 * k,
+    fill: c.core,
+    shadowColor: c.glow,
+    shadowBlur: 25,
+    opacity: 0.95,
+  });
+  const ring = new Konva.Circle({
+    x: at.x,
+    y: at.y,
+    radius: size * 0.3,
+    stroke: c.glow,
+    strokeWidth: size * 0.12,
+  });
+  layer.add(ring, star);
+  sparks(layer, at, size * k, c.spark, Math.round(14 * k), 1.1);
+  animate(
+    layer,
+    650,
+    (t) => {
+      const e = easeOut(t);
+      star.scale({ x: 0.5 + e * 0.8, y: 0.5 + e * 0.8 });
+      star.rotation(t * 40);
+      star.opacity(1 - t);
+      ring.radius(size * (0.3 + e * 1.3 * k));
+      ring.opacity(1 - t);
+    },
+    () => {
+      star.destroy();
+      ring.destroy();
+    },
+  );
+}
+
+function shake(layer: Konva.Layer, strength: number, ms: number): void {
+  const stage = layer.getStage();
+  if (!stage) return;
+  const origin = { x: stage.x(), y: stage.y() };
+  animate(
+    layer,
+    ms,
+    (t) => {
+      const k = (1 - t) * strength;
+      stage.position({
+        x: origin.x + (Math.random() - 0.5) * k,
+        y: origin.y + (Math.random() - 0.5) * k,
+      });
+    },
+    () => stage.position(origin),
+  );
+}

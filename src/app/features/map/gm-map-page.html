@@ -70,6 +70,23 @@
       />
     }
 
+    <!-- Damage step -->
+    @if (pendingDamage(); as pd) {
+      @if (damageTarget(); as dt) {
+        <div class="absolute inset-0 z-20 grid place-items-center overflow-y-auto bg-ink/60 p-3">
+          <app-damage-dialog
+            class="w-full max-w-md"
+            [target]="dt"
+            [attacker]="tokenLabel(pd.from)"
+            [defaultKind]="damageKind()"
+            (apply)="applyDamage($event)"
+            (dismiss)="pendingDamage.set(null)"
+            (animationOnly)="animationOnly()"
+          />
+        </div>
+      }
+    }
+
     <!-- Effect picker -->
     @if (pendingAttack(); as pa) {
       <div

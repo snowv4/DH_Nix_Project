@@ -1,3 +1,4 @@
+import { DamageOutcome } from './damage';
 import { ConditionTag } from './character';
 export interface MapGrid {
   /** Cell size in image pixels. */
@@ -40,6 +41,8 @@ export interface MapEvent {
   /** Attack effect id (see ATTACK_EFFECTS) — empty for the ruler. */
   effect: string;
   at: number;
+  /** Damage applied by the attack (absent: animation only). */
+  result?: DamageOutcome;
 }
 
 /** `campaigns/nix/maps/{id}` — one saved battle map / scene (spec 4.7). */

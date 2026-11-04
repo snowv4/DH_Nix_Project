@@ -20,6 +20,11 @@ import { IconPicker } from '../../shared/ui/icon-picker';
 import { GRID_OPACITY, MapCanvas, MapTool } from './map-canvas';
 import { ATTACK_EFFECTS } from './map-effects';
 import { TokenSheet } from './token-sheet';
+import { DamageChoice, DamageDialog, DamageTarget } from './damage-dialog';
+import { applyDamage, resolveDamage } from '../../core/rules/damage';
+import { DamageKind, DamageOutcome } from '../../core/models/damage';
+import { Character } from '../../core/models/character';
+import { Npc } from '../../core/models/npc';
 import { Dialog } from '@angular/cdk/dialog';
 import { SheetDialog } from '../gm-panel/sheet-dialog';
 import { NpcDialog } from '../npcs/npc-dialog';
@@ -33,7 +38,7 @@ type PanelTab = 'tokens' | 'map' | 'library';
 
 @Component({
   selector: 'app-gm-map-page',
-  imports: [MapCanvas, RouterLink, IconPicker, TokenSheet],
+  imports: [MapCanvas, RouterLink, IconPicker, TokenSheet, DamageDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gm-map-page.html',
 })
@@ -54,8 +59,10 @@ export class GmMapPage {
   protected readonly isActive = computed(() => !!this.mapId() && this.mapId() === this.activeId());
 
   // ---------- People ----------
-  protected readonly characters = inject(CharacterRepository).watchAll(this.destroyRef);
-  protected readonly npcs = inject(NpcRepository).watchAll(this.destroyRef);
+  private readonly characterRepo = inject(CharacterRepository);
+  private readonly npcRepo = inject(NpcRepository);
+  protected readonly characters = this.characterRepo.watchAll(this.destroyRef);
+  protected readonly npcs = this.npcRepo.watchAll(this.destroyRef);
   private readonly dialog = inject(Dialog);
   /** characterId / npcId → portrait, for token pictures. */
   protected readonly portraits = computed(() =>
@@ -344,12 +351,96 @@ export class GmMapPage {
     this.pendingAttack.set({ from, to: targetId });
   }
 
+  /** Animation chosen: now ask how much damage before playing anything. */
   protected playEffect(effect: string): void {
     const p = this.pendingAttack();
-    const a = p && this.state().tokens[p.from];
-    const b = p && this.state().tokens[p.to];
     this.pendingAttack.set(null);
     this.tool.set('move');
+    if (p) this.pendingDamage.set({ ...p, effect });
+  }
+
+  protected readonly pendingDamage = signal<{ from: string; to: string; effect: string } | null>(
+    null,
+  );
+
+  /** Sheet behind a token: PC, NPC or none (quick monster). */
+  private sheetOf(tokenId: string): { pc?: Character; npc?: Npc } {
+    const t = this.state().tokens[tokenId];
+    if (!t?.refId) return {};
+    if (t.kind === 'pc') return { pc: this.characters().find((c) => c.id === t.refId) };
+    return { npc: this.npcs().find((n) => n.id === t.refId) };
+  }
+
+  protected readonly damageTarget = computed<DamageTarget | null>(() => {
+    const p = this.pendingDamage();
+    if (!p) return null;
+    const { pc, npc } = this.sheetOf(p.to);
+    const sheet = pc ?? npc;
+    return {
+      name: this.tokenLabel(p.to),
+      hp: sheet ? sheet.hp : null,
+      thresholds: sheet ? sheet.thresholds : null,
+      armorLeft: pc ? Math.max(0, pc.armor.score - pc.armor.slotsMarked) : null,
+    };
+  });
+
+  protected readonly damageKind = computed<DamageKind>(() => {
+    const e = this.pendingDamage()?.effect ?? '';
+    return ATTACK_EFFECTS.find((x) => x.id === e)?.kind === 'melee' || e === 'arrow'
+      ? 'physical'
+      : 'magic';
+  });
+
+  /** Applies the damage to the target's sheet, then broadcasts animation + outcome. */
+  protected async applyDamage(choice: DamageChoice): Promise<void> {
+    const p = this.pendingDamage();
+    const target = this.damageTarget();
+    this.pendingDamage.set(null);
+    if (!p || !target) return;
+    const r = resolveDamage({
+      ...choice,
+      thresholds: target.thresholds ?? { major: 0, severe: 0 },
+      armorSlotsLeft: target.armorLeft ?? 0,
+      massiveRule: true,
+    });
+    const hp = choice.miss ? 0 : r.hp;
+    const armorUsed = !choice.miss && r.armorUsed;
+    const { pc, npc } = this.sheetOf(p.to);
+    const newHp = target.hp ? applyDamage(target.hp, hp) : null;
+    if (pc && (hp || armorUsed)) {
+      await this.characterRepo.update(pc.id, {
+        hp: newHp ?? pc.hp,
+        armor: armorUsed ? { ...pc.armor, slotsMarked: pc.armor.slotsMarked + 1 } : pc.armor,
+      });
+    } else if (npc && hp && newHp) {
+      await this.npcRepo.update(npc.id, { hp: newHp });
+    }
+    const result: DamageOutcome = {
+      miss: choice.miss,
+      base: choice.miss ? 'none' : r.base,
+      final: choice.miss ? 'none' : r.final,
+      hp,
+      armorUsed,
+      direct: choice.direct,
+      resistance: choice.resistance,
+      kind: choice.kind,
+      down: !!newHp && hp > 0 && newHp.marked >= newHp.max,
+    };
+    this.sendAttack(p, result);
+  }
+
+  protected animationOnly(): void {
+    const p = this.pendingDamage();
+    this.pendingDamage.set(null);
+    if (p) this.sendAttack(p);
+  }
+
+  private sendAttack(
+    p: { from: string; to: string; effect: string },
+    result?: DamageOutcome,
+  ): void {
+    const a = this.state().tokens[p.from];
+    const b = this.state().tokens[p.to];
     if (!a || !b) return;
     // The canvas plays it when the event comes back from Firestore, on this screen and on the TV.
     void this.maps.sendEvent(this.mapId(), {
@@ -357,8 +448,9 @@ export class GmMapPage {
       type: 'attack',
       from: { x: a.x, y: a.y },
       to: { x: b.x, y: b.y },
-      effect,
+      effect: p.effect,
       at: Date.now(),
+      ...(result ? { result } : {}),
     });
   }
 

@@ -29,7 +29,7 @@ import {
   Viewer,
   visibleTokens,
 } from '../../core/rules/map';
-import { playAttack, reducedMotion } from './map-effects';
+import { playAttack, playDamage, reducedMotion } from './map-effects';
 import { ConditionTag } from '../../core/models/character';
 import { conditionViews } from '../../core/rules/conditions';
 
@@ -182,7 +182,10 @@ export class MapCanvas {
   /** Plays an event locally (the GM page calls this right away; the TV gets it from Firestore). */
   play(ev: MapEvent): void {
     if (ev.type === 'ruler') this.drawRuler(ev.from, ev.to, true);
-    else playAttack(this.fx, ev, this.state().grid.size);
+    else {
+      playAttack(this.fx, ev, this.state().grid.size);
+      playDamage(this.fx, ev, this.state().grid.size);
+    }
   }
 
   // ---------- Drawing ----------
